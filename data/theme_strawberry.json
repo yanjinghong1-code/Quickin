@@ -1,0 +1,17 @@
+{
+  ":root=>--general-background-color": "#FFF7FA",
+  ":root=>--general-text-color": "#3A2A33",
+  ":root=>--tab-background-color": "#FFEAF2",
+  ":root=>--decorate-text-color": "#3A2A33",
+  ":root=>--file-naming-label-color": "#B88A9B",
+
+  ":root=>--general-button-color": "#3A2A33",
+  ":root=>--general-button-selected-color": "#2A1E26",
+  ":root=>--general-button-border-color": "#FF9FC1",
+  ":root=>--general-button-background-color": "#FFFFFF",
+  ":root=>--general-button-selected-background-color": "#FFCFE0",
+
+  ":root=>--tablinks-color": "#3A2A33",
+  ":root=>--tablinks-selected-background-color": "#FFCFE0",
+  ":root=>--checkbox-fill-color": "#C94B7C"
+}

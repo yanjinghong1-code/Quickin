@@ -1,0 +1,7 @@
+{
+    "\\n": "<br>",
+    "[{ui_font_bullet_point}]": "<span style=\"font-size: 30px\">&#8226;</span>",
+    "[{ui_codpoints}]": "&#128176;",
+    "[{ui_lock}]": "&#128274;",
+    "[{global_notice}]": "&#128712;"
+}

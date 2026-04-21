@@ -1,0 +1,439 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="action.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.0/css/all.min.css"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap">
+        <script src="jquery-3.7.1.slim.min.js"></script>
+        <script src="xlsx.full.min.js"></script>
+    </head>
+    <body>
+        <!-- FTUE page -->
+        <div id="ftue" style="display: none;">
+            <button id="close_ftue">
+                <i class="fa-regular fa-circle-xmark" style="margin: 0;"></i>
+            </button>
+            <p style="margin-top: 20px;"><b style="line-height: 36px;">Welcom to Khah-Kin-Leh !</b></p>
+            <p style="margin-bottom: 30px; font-size: 12px;">Try the features to boost your efficiency.</p>
+            <div class="divider-container"><div class="divider"></div>&emsp;<b>Jira Account</b>&emsp;<div class="divider"></div></div>
+            <div class="button-container">
+                <label for="profile_username"><b>User name</b></label>
+                <a href="https://dev.activision.com/jira/secure/ViewProfile.jspa" id="check_username">Check Username</a>
+            </div>
+            <div class="profile_username tooltip">
+                <input type="text" id="profile_username" placeholder="Use Username NOT Email!!!" value="@activision.com" style="width: 100%">
+                <span class="tooltiptext">Must be an email format</span>
+            </div>
+            <div class="button-container" style="margin-top: 10px;">
+                <label for="profile_lng"><b>Loc Language</b></label>
+            </div>
+            <select id="profile_lng" style="margin-bottom: 20px;">
+                <option id="FR" value="FR">French</option>
+                <option id="IT" value="IT">Italian</option>
+                <option id="DE" value="DE">German</option>
+                <option id="ES" value="ES">Spanish</option>
+                <option id="RU" value="RU">Russian</option>
+                <option id="PL" value="PL">Polish</option>
+                <option id="AR" value="AR">Arabic</option>
+                <option id="PTBR" value="PTBR">Portuguess Brazilian</option>
+                <option id="MX" value="MX">Latin Spanish</option>
+                <option id="KO" value="KO">Korean</option>
+                <option id="ZHS" value="ZHS">Simplified Chinese</option>
+                <option id="ZHT" value="ZHT">Traditional Chinese</option>
+                <option id="JA" value="JA">Japanese</option>
+            </select>
+          <div class="button-container" style="margin-top: 10px; flex-wrap: wrap; gap: 6px;">
+  <button class="theme_btn" id="theme_default" data-value="default">Default</button>
+  <button class="theme_btn" id="theme_taco" data-value="taco">TACO</button>
+  <button class="theme_btn" id="theme_cerberus" data-value="cerberus">Cerberus</button>
+
+  <button class="theme_btn" id="theme_cinnamoroll" data-value="cinnamoroll">Blue</button>
+  <button class="theme_btn" id="theme_strawberry" data-value="strawberry">Strawberry</button>
+  <button class="theme_btn" id="theme_chimera" data-value="chimera">Chimera</button>
+</div>
+            <div class="divider-container" style="margin-top: 20px;"><div class="divider"></div>&emsp;<b>Help</b>&emsp;<div class="divider"></div></div>
+            <div class="button-container" style="margin-top: 10px;">
+                <button class="help_btn" id="report_issue_btn">Report an issue</button>
+                <button class="help_btn" id="manual_guide_btn">Manual guide</button>
+            </div>
+            <p id="version" style="text-align: center;"></p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab" style="padding: 4px 10px 4px 10px; margin-top: 0;">
+            <button id="new_bug_tab" class="tablinks">Template</button>
+            <button id="file_naming_tab" class="tablinks">Name file</button>
+            <button id="xloc_tab" class="tablinks">XLOC</button>
+            <button id="dvar_tab" class="tablinks">Dvar</button>
+        </div>
+        
+        <!-- Tab content -->
+        <div id="new_bug" class="tabcontent">
+            <div class="divider-container" style="margin-top: 0;"><div class="divider"></div>&emsp;<b>Project</b>&emsp;<div class="divider"></div></div>
+            <select id="project_select">
+                <option id="CER" class="project_option" value="CER">Project - Cerberus</option>
+                <option id="CHI" class="project_option" value="CHI">Project - Chimera</option>
+            </select>
+            <div class="divider-container" style="margin-top: 0;"><div class="divider"></div>&emsp;<b>Bug info</b>&emsp;<div class="divider"></div></div>
+            <textarea id="summary" type="text" autocomplete="off" placeholder="Summary" rows="1"></textarea>
+            <div class="labels">
+                <div style="display: flex; justify-content: space-between;">
+                    <input id="location" type="text" autocomplete="off" placeholder="Location" style="width: 49%;">
+                    <div style="width: 50%; display: inline-flex; align-items: center; justify-content: space-around;" title="Add season label">
+                        Milestone
+                        <select id="milestone_select" style="width: auto;">
+                            <option id="Loc_NA" value="">N/A</option>
+                            <option id="Loc_Ship" value="Loc_Ship">Ship</option>
+                            <option id="Loc_Beta" value="Loc_Beta">Beta</option>
+                            <option id="Loc_1" value="Loc_S1">1</option>
+                            <option id="Loc_15" value="Loc_S1.5">1.5</option>
+                            <option id="Loc_2" value="Loc_S2">2</option>
+                            <option id="Loc_25" value="Loc_S2.5">2.5</option>
+                            <option id="Loc_3" value="Loc_S3">3</option>
+                            <option id="Loc_35" value="Loc_S3.5">3.5</option>
+                            <option id="Loc_4" value="Loc_S4">4</option>
+                            <option id="Loc_45" value="Loc_S4.5">4.5</option>
+                            <option id="Loc_5" value="Loc_S5">5</option>
+                            <option id="Loc_55" value="Loc_S5.5">5.5</option>
+                            <option id="Loc_6" value="Loc_S6">6</option>
+                            <option id="Loc_65" value="Loc_S6.5">6.5</option>
+                        </select>
+                        <i class="fa-solid fa-lock-open" id="milestone_lock" title="prevent reset" style="margin: 0;"></i>
+                    </div>
+                </div>
+<div style="display: flex; justify-content: space-between;">
+    <div style="position: relative; width: 49%; display: inline-block;">
+        <input id="found_cl" type="text" autocomplete="off" placeholder="Found CL">
+        <i class="fa-solid fa-lock-open input-text-lock" id="found_cl_lock" title="prevent reset"></i>
+    </div>
+
+    <div style="width: 52%; display: inline-flex; align-items: center; justify-content: space-around;" title="Add label">
+        Label
+        <select id="label_select" style="width: auto;">
+            <option value="">N/A</option>
+            <option value="Loc_Bundles">Bundle</option>
+            <option value="Loc_BP">Battlepass</option>
+            <option value="Loc_Event">Event</option>
+        </select>
+    </div>
+</div>
+                <div class="divider-container"><div class="divider"></div>&emsp;<b>Platform</b>&emsp;<div class="divider"></div></div>
+                <div class="button-container">
+                    <button class="add_platform" id="platform_PC" value="">PC</button> 
+                    <button class="add_platform" id="platform_PS5" value="">PS5</button> 
+                    <button class="add_platform" id="platform_PS4" value="">PS4</button> 
+                    <button class="add_platform" id="platform_XSX" value="">XSX</button> 
+                    <button class="add_platform" id="platform_X1" value="">X1</button>
+                </div>
+                <div class="divider-container"><div class="divider"></div>&emsp;<b>Languages</b>&emsp;<div class="divider"></div></div>
+                <div class="button-container">
+                    <button class="add_lng" id="lng_ML" value="" title="Select or switch to All">ML</button> 
+                    <button class="add_lng" id="lng_ALL" value="" title="Select or switch to ML" style="display: none;">All</button> 
+                    <button class="add_lng single_lng" id="lng_FR" value="">FR</button> 
+                    <button class="add_lng single_lng" id="lng_IT" value="">IT</button> 
+                    <button class="add_lng single_lng" id="lng_DE" value="">DE</button> 
+                    <button class="add_lng single_lng" id="lng_ES" value="">ES</button>
+                </div>
+                <div class="button-container">
+                    <button class="add_lng single_lng" id="lng_RU" value="">RU</button> 
+                    <button class="add_lng single_lng" id="lng_PL" value="">PL</button> 
+                    <button class="add_lng single_lng" id="lng_AR" value="">AR</button> 
+                    <button class="add_lng single_lng" id="lng_ENAR" value="">ENAR</button> 
+                    <button class="add_lng single_lng" id="lng_PTBR" value="">PTBR</button>
+                </div>
+                <div class="button-container">
+                    <button class="add_lng single_lng" id="lng_MX" value="">MX</button> 
+                    <button class="add_lng single_lng" id="lng_JA" value="">JA</button> 
+                    <button class="add_lng single_lng" id="lng_KO" value="">KO</button> 
+                    <button class="add_lng single_lng" id="lng_ZHS" value="">ZHS</button> 
+                    <button class="add_lng single_lng" id="lng_ZHT" value="">ZHT</button>
+                </div>
+                <div class="divider-container"><div class="divider"></div>&emsp;<b>Game mode</b>&emsp;<div class="divider"></div></div>
+                <div class="button-container">
+                    <button class="add_label game_mode" id="Loc_Global" value="Loc_Global" style="padding: 0;">Global</button> 
+                    <button class="add_label game_mode" id="Loc_SP" value="Loc_SP">SP</button> 
+                    <button class="add_label game_mode" id="Loc_COOP" value="Loc_COOP" style="display: none;">COOP</button> 
+                    <button class="add_label game_mode" id="Loc_MP" value="Loc_MP">MP</button> 
+                    <button class="add_label game_mode" id="Loc_ZM" value="Loc_ZM">ZM</button> 
+                    <button class="add_label game_mode" id="Loc_WZ" value="Loc_WZ">WZ</button>
+                </div>
+                <div class="divider-container"><div class="divider"></div>&emsp;<b>Bug type</b>&emsp;<div class="divider"></div></div>
+                <div class="button-container">
+                    <button class="add_label issue_type_1 advanced_type" id="Loc_Text" value="Loc_Text">Text</button> 
+                    <button class="add_label issue_type_1 advanced_type" id="Loc_Subtitle" value="Loc_Subtitle">Subtitle</button> 
+                    <button class="add_label issue_type_1 advanced_type" id="Loc_Audio" value="Loc_Audio">Audio</button> 
+                    <button class="add_label issue_type_1 advanced_type" id="Loc_Audio_PP" value="Loc_Prepro">Prepro</button> 
+                    <button class="add_label" id="Loc_UI" value="Loc_UI">UI</button> 
+                </div>
+                <div class="button-container">
+                    <button class="add_label" id="Loc_TRG" value="Loc_TRG">TRG</button> 
+                    <button class="add_label" id="Loc_Glossary" value="Loc_Glossary">Glossary</button> 
+                    <button class="add_label advanced_type" id="Loc_Telescope" value="Loc_Telescope">Telescope</button>
+                    <button class="add_label issue_type_1 advanced_type" id="Loc_Functional" value="Loc_Functional">Functional</button> 
+                </div>
+                <div class="specific_label text_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Text issue type</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Text_Amendment" value="Loc_Text_Amendment">Amendment</button> 
+                        <button class="add_label issue_type_2" id="Loc_Text_Overlap" value="Loc_Text_Overlap Loc_Overlap Loc_UI">Overlap</button>
+                        <button class="add_label issue_type_2" id="Loc_Text_Consistency" value="Loc_Text_Consistency">Consistency</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Text_Context" value="Loc_Text_Context">Context</button>
+                        <button class="add_label issue_type_2" id="Loc_Text_Graphic" value="Loc_Text_Graphic">Graphic</button>
+                        <button class="add_label issue_type_2" id="Loc_Text_Spelling_Grammar" value="Loc_Text_Spelling_Grammar">Spelling/grammar</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Text_Alignment" value="Loc_Text_Alignment">Alignment</button> 
+                        <button class="add_label issue_type_2" id="Loc_Text_Missing" value="Loc_Text_Missing">Missing</button>
+                        <button class="add_label issue_type_2" id="Loc_Text_Not_Translated" value="Loc_Text_Not_Translated">Not translated</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Text_Integration" value="Loc_Text_Integration">Integration</button>
+                        <button class="add_label issue_type_2" id="Loc_Text_Font_Size" value="Loc_Text_Font_Size">Font size</button>
+                        <button class="add_label issue_type_2" id="Loc_Text_Truncation" value="Loc_Text_Truncation Loc_Truncation Loc_UI">Truncation</button> 
+                    </div>
+                </div>
+                <div class="specific_label subtitle_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Subtitle issue type</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Amendment" value="Loc_Subtitle_Amendment">Amendment</button> 
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Overlap" value="Loc_Subtitle_Overlap">Overlap</button>
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Consistency" value="Loc_Subtitle_Consistency">Consistency</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Context" value="Loc_Subtitle_Context">Context</button>
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Missing" value="Loc_Subtitle_Missing">Missing</button>
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Spelling_Grammar" value="Loc_Subtitle_Spelling_Grammar">Spelling grammar</button>
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Alignment" value="Loc_Subtitle_Alignment">Alignment</button> 
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Mismatch" value="Loc_Subtitle_Mismatch">Mismatch</button>
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Integration" value="Loc_Subtitle_Integration">Integration</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Truncation" value="Loc_Subtitle_Truncation">Truncation</button> 
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Font_Size" value="Loc_Subtitle_Font_Size">Font size</button>
+                        <button class="add_label issue_type_2" id="Loc_Subtitle_Not_Translated" value="Loc_Subtitle_Not_Translated">Not translated</button> 
+                    </div>
+                </div>
+                <div class="specific_label audio_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Audio issue type</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Audio_Consistency" value="Loc_Audio_Consistency">Consistency</button> 
+                        <button class="add_label issue_type_2" id="Loc_Audio_Context" value="Loc_Audio_Context">Context</button>
+                        <button class="add_label issue_type_2" id="Loc_Audio_Cut" value="Loc_Audio_Cut">Cut</button> 
+                        <button class="add_label issue_type_2" id="Loc_Audio_SFX" value="Loc_Audio_SFX">SFX</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_Audio_Missing" value="Loc_Audio_Missing">Missing</button>
+                        <button class="add_label issue_type_2" id="Loc_Audio_Overlap" value="Loc_Audio_Overlap">Overlap</button>
+                        <button class="add_label issue_type_2" id="Loc_Audio_Volume" value="Loc_Audio_Volume">Volume</button>
+                        <button class="add_label issue_type_2" id="Loc_Audio_Sync" value="Loc_Audio_Sync">Sync</button>
+                    </div>
+                    <button class="add_label issue_type_2" id="Loc_Audio_Not_Translated" value="Loc_Audio_Not_Translated">Not translated</button> 
+                    <button class="add_label issue_type_2" id="Loc_Audio_Text_Integration" value="Loc_Audio_Text_Integration">Text integration</button>
+                </div>
+                <div class="specific_label prepro_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Audio PP issue type</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_PP_Context" value="Loc_Audio_Context">Context</button>
+                        <button class="add_label issue_type_2" id="Loc_PP_Sync" value="Loc_Audio_Sync">Sync</button>
+                        <button class="add_label issue_type_2" id="Loc_PP_Missing" value="Loc_Audio_Missing">Missing</button>
+                        <button class="add_label issue_type_2" id="" value="">Not as Script</button>
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_PP_Delivery_Technical" value="Loc_Audio_Delivery_Technical">Delivery Technical</button>
+                        <button class="add_label issue_type_2" id="Loc_PP_Delivery_Consistency" value="Loc_Audio_Delivery_Consistency">Delivery Consistency</button>
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_PP_Delivery_Context" value="Loc_Audio_Delivery_Context">Delivery Context</button>
+                        <button class="add_label issue_type_2" id="Loc_PP_Text_Mismatch" value="Loc_Audio_Text_Mismatch">Audio Text Mismatch</button>
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label issue_type_2" id="Loc_PP_Delivery_Acting" value="Loc_Audio_Delivery_Acting">Delivery Acting</button>
+                        <button class="add_label" id="Loc_Cinematic" value="Loc_Cinematic">Cinematic</button>
+                        <button class="add_label" id="Loc_Trailer" value="Loc_Trailer">Trailer</button> 
+                    </div>
+                </div>
+                <div class="specific_label telescope_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Telescope issue type</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label Loc_Telescope_subtype" id="telescope" value="telescope">telescope</button>
+                        <button class="add_label Loc_Telescope_subtype" id="CEREntryS1" value="CEREntryS1">CEREntryS1</button>
+                        <button class="add_label Loc_Telescope_subtype" id="CERZMLB" value="CERZMLB">CER<span style="color: DarkOrange;">ZM</span>LB</button> 
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label Loc_Telescope_subtype" id="CERMOTD" value="CERMOTD">CERMOTD</button> 
+                        <button class="add_label Loc_Telescope_subtype" id="CEREULA" value="CEREULA">CEREULA</button>
+                        <button class="add_label Loc_Telescope_subtype" id="CEREntryTEL" value="CEREntryTEL">CEREntryTEL</button> 
+                    </div> 
+                    <button class="add_label Loc_Telescope_subtype" id="CERResurgLB" value="CERResurgLB">CERResurgLB</button> 
+                    <button class="add_label Loc_Telescope_subtype" id="Loc_Telescope" value="Loc_Telescope">Loc Telescope</button>
+                    <button class="add_label Loc_Telescope_subtype" id="CERMPLB" value="CERMPLB">CER<span style="color: DarkOrange;">MP</span>LB</button> 
+                    <button class="add_label Loc_Telescope_subtype" id="Telescope" value="Telescope">Telescope</button> 
+                </div>
+                <div class="specific_label language_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Language specific</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label language_specific_issue AR_specific_issue" id="Loc_Arabic_Safe" value="Loc_Arabic_Safe" style="display: none;">AR SAFE</button> 
+                        <button class="add_label language_specific_issue AR_specific_issue" id="Loc_Arabic_Technical" value="Loc_Arabic_Technical" style="display: none;">AR TECHNICAL</button> 
+                        <button class="add_label language_specific_issue DE_specific_issue" id="Loc_German_Safe" value="Loc_German_Safe" style="display: none;">DE SAFE</button> 
+                        <button class="add_label language_specific_issue JA_specific_issue" id="Loc_Japanese_Safe" value="Loc_Japanese_Safe" style="display: none;">JA SAFE</button>
+                        <button class="add_label language_specific_issue KO_specific_issue" id="Loc_Korean_Safe" value="Loc_Korean_Safe" style="display: none;">KO SAFE</button>
+                        <button class="add_label language_specific_issue ZHS_specific_issue" id="Loc_Chinese_Safe" value="Loc_Chinese_Safe" style="display: none;">Chinese SAFE</button>
+                    </div>
+                </div>
+            </div>
+            <div class="divider-container"><div class="divider"></div>&emsp;<b>Desc</b>&emsp;<div class="divider"></div></div>
+            <label for="repro_step">Repro step</label>
+            <textarea id="repro_step" placeholder="In game repro steps" style="word-break: break-all;"></textarea>
+            <label for="bug_observed">Bug observed</label>
+            <textarea id="bug_observed" placeholder="Detail of the bug"></textarea>
+            <label for="keywords">Keywords</label>
+            <textarea id="keywords" placeholder="Add keywords for better searching result"></textarea>
+            <div class="divider-container"><div class="divider"></div>&emsp;<b>Source IDs</b>&emsp;<div class="divider"></div></div>
+            <textarea id="resource_ids" placeholder="Paste resource IDs here"></textarea>
+        </div>
+
+        <div id="file_naming" class="tabcontent">
+            <label for="bug_id">Bug number<input type="text" id="bug_id" placeholder="(⁠ ⁠ꈍ⁠ᴗ⁠ꈍ⁠)" value="" disabled/></label>
+            <label for="bug_lng_select">Language<select id="bug_lng_select" style="padding: 0;" disabled><option value="(⁠◕⁠ᴗ⁠◕⁠✿⁠)">(⁠◕⁠ᴗ⁠◕⁠✿⁠)</option></select></label>
+            <label for="bug_type_1">Bug type<input type="text" id="bug_type_1" placeholder="ᕦ⁠(⁠ò⁠_⁠ó⁠ˇ⁠)⁠ᕤ" value="" disabled/></label>
+            <label for="bug_type_2">Issue type<input type="text" id="bug_type_2" placeholder="ლ⁠(⁠´⁠ ⁠❥⁠ ⁠`⁠ლ⁠)" value="" disabled/></label>
+            <div style="position: relative;">
+                <label for="release_id">Found CL<input type="text" id="release_id" placeholder="(⁠･ั⁠ω⁠･ั⁠)" value="" autocomplete="off"/></label>
+                <i class="fa-solid fa-lock-open input-text-lock" id="regression_lock" title="Lock this ID"></i>
+            </div>
+            <p style="text-align: center; margin: 5px auto;">
+                <svg width="100" height="12.5">
+                    <polygon points="25, 0, 75, 0, 50, 12.5" fill="#CFCFCF" />
+                </svg>
+            </p>
+            <div class="copy_comment" style="position: relative;">
+                <textarea id="file_name" rows="3" style="word-break: break-all;"></textarea>
+                <i id="file_name_copy" class="fa-solid fa-copy" title="Copy"></i>
+                <i id="lng_warning" class="fa-solid fa-triangle-exclamation" style="display: none;"> Note: It's not your language!</i>
+            </div>
+<div class="file_naming_button button-container">
+  <button id="mode_namefile" title="Switch to Name file mode">Name file</button>
+
+  <button class="comment" id="VF" title="Click: next template&#10;Right click: switch platform">VF</button>
+  <button class="comment" id="VO" title="Click: next template&#10;Right click: switch platform">VO</button>
+  <button class="comment" id="CNVR" title="Click: next template&#10;Right click: switch platform">CNV</button>
+</div>
+        </div>
+
+        <div id="xloc" class="tabcontent">
+            <button id="compare_source" title="Compare current and previous source">&nbsp;&nbsp;&nbsp;Compare source&nbsp;&nbsp;&nbsp;</button>
+            <button id="compare_translation" title="Compare current and previous translation">Compare translation</button>
+            <button id="highlight_color_code" title="Highlilght the corresponding color on color code">Highlight color code</button><br>
+            <p style="text-align: center; margin-bottom: 6px;">Color code string preview</p>
+            <textarea id="color_code_string" placeholder="Paste the color code string here!" rows="3" title="Convert the string with color code into colored text"></textarea>
+            <!-- Shadow Clone -->
+            <div id="shadow"></div>
+            <p style="text-align: center; margin: 5px auto;">
+                <svg width="100" height="12.5">
+                    <polygon points="25, 0, 75, 0, 50, 12.5" fill="#CFCFCF" />
+                </svg>
+            </p>
+            <p id="colored_string"></p>
+            <div class="bg-switch" style="text-align: right;">
+                <i class="fa-regular fa-circle" id="light-background" style="cursor: pointer;"></i>
+                <i class="fa-solid fa-circle" id="dark-background" style="cursor: pointer;"></i>
+            </div>
+        </div>
+
+        <div id="dvar" class="tabcontent">
+            <div class="copy_dvar" style="position: relative;">
+                <textarea id="result_dvar" rows="3" style="word-break: break-all;" contenteditable="true"></textarea>
+                <i id="dvar_copy" class="fa-solid fa-copy" title="Copy"></i>
+                <i id="dvar_switcher" class="fa-solid fa-rocket" title="Add or remove prefix"></i>
+            </div>
+            <div style="display: inline-flex; width: 100%; align-items: center; margin-bottom: 5px;">
+                <input class="add_dvar" id="add_quick_dvar" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="quick_dvar_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="quick_dvar_select" class="dvar_select" style="padding: 0; width: 100%;">
+                        <option value="" disabled selected style="display: none;">Frequently Used</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>
+            </div>
+            <div style="display: inline-flex; width: 100%; align-items: center; margin-bottom: 5px;">
+                <input class="add_dvar" id="add_mp_map" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="mp_map_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="mp_map_select" class="dvar_select" style="padding: 0;">
+                        <option value="" disabled selected style="display: none;">MP Map</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>
+                <input class="add_dvar" id="add_mp_mode" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="mp_mode_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="mp_mode_select" class="dvar_select" style="padding: 0;">
+                        <option value="" disabled selected style="display: none;">MP Mode</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>
+            </div>
+            <div style="display: inline-flex; width: 100%; align-items: center; margin-bottom: 5px;">
+                <input class="add_dvar" id="add_zm_map" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="zm_map_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="zm_map_select" class="dvar_select" style="padding: 0;">
+                        <option value="" disabled selected style="display: none;">ZM Map</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>
+                <input class="add_dvar" id="add_zm_mode" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="zm_mode_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="zm_mode_select" class="dvar_select" style="padding: 0;">
+                        <option value="" disabled selected style="display: none;">ZM Mode</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>
+            </div>
+            <div style="display: inline-flex; width: 100%; align-items: center; margin-bottom: 5px;">
+                <input class="add_dvar" id="add_wz_map" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="wz_map_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="wz_map_select" class="dvar_select" style="padding: 0;">
+                        <option value="" disabled selected style="display: none;">WZ Map</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>  
+                <input class="add_dvar" id="add_wz_mode" type="checkbox" style="vertical-align: middle; display: inline;">
+                <div id="wz_mode_select_tooltip" class="tooltip" style="width: 100%;">
+                    <select id="wz_mode_select" class="dvar_select" style="padding: 0;">
+                        <option value="" disabled selected style="display: none;">WZ Mode</option>
+                    </select>
+                    <span class="tooltiptext">Select one option first!</span>
+                </div>
+            </div>
+            <div style="display: inline-flex; width: 100%; align-items: center; margin-bottom: 5px;">
+                <input class="add_dvar" id="add_timewarp_dvar" type="checkbox" style="vertical-align: middle; display: inline;">
+                <label for="timewarp_dvar" style="margin-right: 5px;">Timewarp</label>
+                <input type="datetime-local" id="timewarp_dvar" name="timewarp" style="width: 100%;"/>
+            </div>
+            <div style="display: flex; width: 100%; align-items: center; justify-content: center; margin-bottom: 5px;">
+                <button id="dvar_reset">Reset</button>
+            </div>
+        </div>
+
+<!-- Footer -->
+<footer>
+    <i id="setting" class="fas fa-cog"></i>
+    <div id="new_bug_action_button" style="display: none;">
+        <button id="reset_all">Reset all</button>&emsp;<button id="create_bug">Create template</button>
+    </div>
+
+<img id="cerberus_logo" class="logo" src="../data/cerberus.png" style="display: none; z-index: -1; pointer-events: none;">
+<img id="chimera_logo" class="logo" src="../data/chimera.png" style="display: none; z-index: -1; pointer-events: none;">
+<img id="cinnamoroll_logo" class="logo" src="../data/cinnamoroll.webp" style="display: none; z-index: -1; pointer-events: none;">
+<img id="strawberry_logo" class="logo" src="../data/strawberry.webp" style="display: none; z-index: -1; pointer-events: none;">
+
+
+    <i id="resize" class="fa-solid fa-arrows-up-down" title="Resize height"></i>
+</footer>
+<script src="action.js"></script>
+</body>
+</html>
