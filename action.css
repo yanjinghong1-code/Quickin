@@ -1,0 +1,507 @@
+:root {
+    --general-background-color: #FFF;
+    --general-text-color: #494949;
+    --tab-background-color: #DDD;
+    --decorate-text-color: #494949;
+    --file-naming-label-color: #B9B9B9;
+    --general-button-color: #494949;
+    --general-button-selected-color: #494949;
+    --general-button-border-color: #606060;
+    --general-button-background-color: #F1F1F1;
+    --general-button-selected-background-color: #ACACAC;
+    --tablinks-color: #494949;
+    --tablinks-selected-background-color: #CCC;
+    --checkbox-fill-color: #000;
+}
+/* body */
+* {
+    margin-bottom: .2rem;
+    font-family: "Inter", serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    user-select: none; /* 防止反白 */
+}
+*:disabled {
+    background-color: #DDD !important;
+    color: black !important;
+}
+::placeholder {
+    color: #B9B9B9;
+}
+*:focus {
+    outline: none;
+}
+
+body {
+    width: 320px;
+    margin: 0;
+}
+
+/* html */
+html {
+    color: var(--general-text-color);
+    background-color: var(--general-background-color);
+}
+
+/* div */
+div.bind {
+    display: block;
+}
+div.essential {
+    display: flex;
+    justify-content: space-between;
+}
+div.copy_comment {
+    display: flex;
+    gap: .5rem;
+}
+div.regression_button {
+    display: flex;
+    justify-content: space-between;
+}
+div.regression_button button {
+    width: 33%;
+}
+div.divider-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 12px auto 8px auto;
+}
+div.divider {
+    flex-grow: 1;
+    height: 1px;
+    background-color: #9f9f9f;
+}
+div.button-container {
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+}
+div#mask {
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background-color: rgba(248, 248, 255, .9);
+    z-index: 999;
+}
+
+/* textarea */
+textarea {
+    width: 100%;
+    resize: none;
+    overflow-y: auto;
+    max-height: 220px;
+    border-radius: 4px;
+}
+textarea:not(#summary):not(#keywords) {
+    min-height: 93px;
+}
+
+/* p */
+p {
+    margin: auto;
+    color: var(--decorate-text-color);
+}
+p#current_bug {
+    margin-bottom: 3px;
+}
+p#version {
+    font-size: .7rem;
+    margin: auto 0;
+}
+
+/* a */
+a#check_username, a#report {
+    font-size: .7rem;
+    text-decoration: none;
+    margin: auto 0;
+    color: var(--general-text-color);
+}
+
+/* input, select */
+input,select {
+    border: 1.5px solid;
+    border-radius: 4px;
+    padding: 1px 3px;
+}
+input[type = text], select {
+    width: -webkit-fill-available;
+    height: 22px;
+    border: 1px solid #606060;
+}
+input[type = number] {
+    width: 30%;
+}
+input[type="checkbox"]:before {
+    position: relative;
+    display: block;
+    width: 11px;
+    height: 11px;
+    border: 1px solid #808080;
+    content: "";
+    background: #FFF;
+}
+input[type="checkbox"]:checked:after {
+    position: relative;
+    display: block;
+    left: 2px;
+    top: -11px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--checkbox-fill-color);
+    content: "";
+    background-color: var(--checkbox-fill-color);
+}
+
+/* list */
+ol { 
+    padding-left: 1.8em; 
+}
+
+/* button */
+button {
+    border-radius: 4px;
+    border: 1px solid var(--general-button-border-color);
+    padding: 2px 7.5px;
+    color: var(--general-button-color);
+    background-color: var(--general-button-background-color);
+}
+button:hover {
+    color: var(--general-button-selected-color);
+    background-color: var(--general-button-selected-background-color);
+}
+button.selected {
+    color: var(--general-button-selected-color);
+    background-color: var(--general-button-selected-background-color);
+}
+button.selected:hover {
+    color: var(--general-button-selected-color);
+    background-color: var(--general-button-selected-background-color);
+}
+
+/* ===== Disabled rules (FIXED) =====
+   1) 只对真正的 HTML disabled 生效（禁用点击）
+   2) .disabled 只负责“变灰外观”，不再通杀禁用点击
+   3) 真正要禁用点击的，只给 comment 用：.comment.disabled
+*/
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none; /* 仅 HTML disabled 才彻底不能点 */
+}
+button.disabled {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+    filter: grayscale(100%);
+}
+/* 只禁用 VF/VO/CNV 的点击 */
+button.comment.disabled {
+    opacity: 0.35;          /* 变灰 */
+    pointer-events: none;   /* 禁止点击/右键 */
+    filter: grayscale(1);
+}
+button:disabled:hover,
+button.disabled:hover {
+    background-color: var(--general-button-background-color);
+    color: var(--general-button-color);
+}
+
+/* icon */
+i#setting {
+    font-size: 1.2rem;
+    color: #494949;
+    position: absolute;
+    left: 0px;
+    line-height: 0;
+    margin-left: 5px;
+    /* vertically center the icon */
+    top: 50%; transform: translateY(-50%);
+}
+i#resize {
+    font-size: 1.2rem;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    cursor: grabbing;
+}
+i.fa-lock.input-text-lock,
+i.fa-lock-open.input-text-lock {
+    position: absolute;
+    right: 5px;
+    bottom: 7px;
+    margin: auto;
+    cursor: pointer;
+}
+i#file_name_copy, i#dvar_copy {
+    position: absolute;
+    right: 4px;
+    bottom: 6px;
+    font-size: 1.2rem;
+    margin: auto;
+    cursor: pointer;
+}
+i#lng_warning {
+    color: red;
+    position: absolute;
+    left: 4px;
+    bottom: 6px;
+    font-size: .65rem;
+    margin: auto;
+}
+i#dvar_switcher {
+    position: absolute;
+    right: 25px;
+    bottom: 6px;
+    font-size: 1.2rem;
+    margin: auto;
+    cursor: pointer;
+}
+
+/* img */
+img.logo {
+    width: 15%;
+    position: absolute;
+    right: 5px;
+    line-height: 0;
+    margin-right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* label */
+label {
+    color: var(--decorate-text-color);
+}
+
+/* span */
+span {
+    color: var(--decorate-text-color);
+}
+
+/* SVG */
+svg {
+    margin: 0;
+}
+
+/* footer */
+footer {
+    display: flex;
+    position: relative;
+    justify-content: center;
+    margin: 7px;
+    height: 30px;
+}
+
+footer #new_bug_action_button > button {
+    padding: 2px 4.5px;
+}
+
+/* tab */
+div.tab {
+    background-color: var(--tab-background-color);
+    display: flex;
+    justify-content: space-between;
+}
+.tab button {
+    width: 32%;
+    text-align: center;
+    background-color: inherit;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 3.5px 3px;
+    margin: 2.5px 0;
+    transition: 0.3s;
+}
+.tab button.tablinks {
+    font-weight: 500;
+    color: var(--tablinks-color);
+}
+.tab button.tablinks:hover {
+    color: var(--tablinks-color);
+    background-color: var(--tablinks-selected-background-color);
+}
+.tab button.tablinks.selected {
+    background-color: var(--tablinks-selected-background-color);
+}
+/* tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 9px 6px 12px;
+    height: 300px;
+    max-height: 500px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    margin-bottom: 0;
+    margin-right: 3px;
+
+    &::-webkit-scrollbar {
+        width: 5px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background-color: #d3d3d3;
+        border-radius: 3px;
+    }
+}
+
+/* each tab content related */
+#ftue {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background-color: var(--general-background-color);
+    z-index: 999;
+}
+#ftue > * {
+    margin: auto 14px;
+    text-align: center;
+}
+#ftue button#close_ftue {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    right: 8px;
+    top: 8px;
+    font-size: 18px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+#ftue button#close_ftue:hover,
+#ftue button#close_ftue:disabled {
+    color: var(--general-button-color) !important;
+    background: none !important;
+}
+#ftue button.theme_btn {
+    width: 30%;
+}
+#ftue button.help_btn {
+    width: 47.5%;
+}
+#ftue p#version {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+#new_bug button.add_lng,
+#new_bug button.add_platform,
+#new_bug button.game_mode {
+    width: 18%;
+}
+#file_naming label {
+    display: flex;
+    justify-content: space-between;
+    color: var(--file-naming-label-color);
+}
+#file_naming label > input,
+#file_naming select {
+    width: 70%;
+}
+#file_naming button {
+    padding: 2px 5.5px;
+}
+
+#xloc > textarea#color_code_string {
+    height: 51px;
+    min-height: 51px;
+    font-size: 0.83333125rem;
+}
+#xloc > p#colored_string {
+    border: 1px solid rgb(118, 118, 118);
+    border-radius: 3px;
+    padding: 2px;
+    min-height: 51px;
+    word-wrap: break-word;
+    font-size: 0.83333125rem;
+    color: Gainsboro !important;
+    background-color: #333333;
+    user-select: text;
+}
+#xloc > p#colored_string > span {
+    font-size: inherit;
+}
+#xloc > button {
+    display: block;
+    margin: 5px auto;
+    padding: 4px 10px;
+}
+
+/* Setting Window */
+#setting_window {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--general-text-color);
+    background-color: var(--general-background-color);
+    border-radius: 15px;
+    border: 1.5px solid #606060;
+    padding: 12.5px;
+}
+
+/* tooltips */
+.tooltip {
+    position: relative;
+} 
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: var(--general-text-color);
+    color: var(--general-background-color);
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 105%;
+    left: 50%;
+    margin-left: -60px;
+}
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--general-text-color) transparent transparent transparent;
+}
+.tooltip.format-error .tooltiptext {
+    visibility: visible;
+}
+.tooltip.format-error #profile_username {
+    border: 1px solid red;
+}
+
+/* shadow clone */
+#shadow {
+    visibility: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    position: absolute;
+    top: -9999px;
+    left: 0;
+    z-index: -1;
+    width: 290px;
+    padding: 2px;
+}
+#file_naming .file_naming_button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    flex-wrap: nowrap;
+}
+
+/* 添加这一条规则：让 Name file 按钮向右撑开空间 */
+#file_naming .file_naming_button button#mode_namefile {
+    margin-right: auto;
+}
