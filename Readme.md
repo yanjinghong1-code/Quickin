@@ -7,18 +7,18 @@ Copyright&copy; 2024, Ivy Ho
 1. Added new project REX and removed Cerberus.
 2. Updated platform availability for REX (PS4 and Xbox One are no longer shown in UI).
 3. Added animation feedback to the Filename and Dvar buttons in Xloc.
-# 2025-01-26 by Yan
+# 2026-01-26 by Yan
 1. Finish 3 new themes
 2. Adding new feature: 3 template pools for regression comments
 3. Report an issue direct to Yan's slack
 4. Tooltips: Double click to switch comments
-# 2025-01-26 by Jinghong
+# 2026-01-26 by Jinghong
 1. Adding more templates for regression
-# 2025-01-23 by Yan
+# 2026-01-23 by Yan
 1. Adding more templates for regression
 2. Add three themes (Cinnamoroll, Strawberry and Chimera)
 3. Autofill Automation ultlized filed in Jira when creating template
-# 2025-01-06
+# 2026-01-06
 1. Improve download process
 # 2025-12-19🎄
 1. Improve user experience when select label in template
