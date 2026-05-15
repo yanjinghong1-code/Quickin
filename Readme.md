@@ -3,7 +3,7 @@
 >**We are currently in Beta Test**
 
 Copyright&copy; 2024, Ivy Ho
-# 2025-01-26 by Jinghong
+# 2026-05-16 by Jinghong
 1. Added new project REX and removed Cerberus.
 2. Updated platform availability for REX (PS4 and Xbox One are no longer shown in UI).
 3. Added animation feedback to the Filename and Dvar buttons in Xloc.
