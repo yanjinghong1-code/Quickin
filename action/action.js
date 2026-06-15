@@ -344,29 +344,91 @@ function updateKeywords() {
     $("#keywords").val(keywords.join(", "))
     chrome.storage.local.set({"keywords": $("#keywords").val()})
 }
+// REX 專用: Art / SWITCH 與平台文字同步
+const rexBugTypeLayout = {
+    initialized: false,
+    preproOriginalNext: null,
+    artOriginalNext: null,
+    trgOriginalNext: null
+}
+function syncRexBugTypeUI() {
+    if(!rexBugTypeLayout.initialized) {
+        rexBugTypeLayout.preproOriginalNext = $("#Loc_Audio_PP").next()
+        rexBugTypeLayout.artOriginalNext = $("#Loc_Art").next()
+        rexBugTypeLayout.trgOriginalNext = $("#Loc_TRG").next()
+        rexBugTypeLayout.initialized = true
+    }
+    if(PROJECT == "REX") {
+        $("#Loc_Art").show()
+        $("#Loc_TRG").hide().removeClass("selected")
+        $("#Loc_Audio_PP").removeClass("issue_type_1")
+        $("#Loc_Audio_PP").insertBefore($("#Loc_Glossary"))
+        $("#Loc_Art").insertBefore($("#Loc_UI"))
+    }else{
+        if(rexBugTypeLayout.preproOriginalNext && rexBugTypeLayout.preproOriginalNext.length) {
+            $("#Loc_Audio_PP").insertBefore(rexBugTypeLayout.preproOriginalNext)
+        }
+        if(rexBugTypeLayout.artOriginalNext && rexBugTypeLayout.artOriginalNext.length) {
+            $("#Loc_Art").insertBefore(rexBugTypeLayout.artOriginalNext)
+        }
+        if(rexBugTypeLayout.trgOriginalNext && rexBugTypeLayout.trgOriginalNext.length) {
+            $("#Loc_TRG").insertBefore(rexBugTypeLayout.trgOriginalNext)
+        }
+        $("#Loc_Audio_PP").addClass("issue_type_1")
+        $("#Loc_Art").hide().removeClass("selected")
+        $("#Loc_TRG").show()
+    }
+}
+function getSelectedPlatformElements() {
+    let $selected = $(".add_platform.selected")
+    if(PROJECT == "REX" && $("#platform_switch").hasClass("selected")) {
+        $selected = $selected.add($("#platform_switch"))
+    }
+    return $selected
+}
+function getSelectedPlatformText() {
+    return getSelectedPlatformElements().map(function() {return $(this).text()}).get().join("/")
+}
+function getSelectedPlatformIds() {
+    return getSelectedPlatformElements().map(function() {return this.id}).get().join()
+}
+function saveSelectedPlatforms() {
+    chrome.storage.local.set({"platform": getSelectedPlatformIds()})
+}
+function syncReproStepPlatformOnly() {
+    let lines = ($("#repro_step").val() || "").split("\n")
+    if(lines.length > 0 && lines[0].includes(" on ")) {
+        lines[0] = lines[0].replace(/ on .*/, " on " + getSelectedPlatformText())
+        $("#repro_step").val(lines.join("\n"))
+        chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    }
+}
 // 切換SP和COOP
 function updateGameMode() {
+    syncRexBugTypeUI()
     if(PROJECT == "REX") {
- // REX Platform UI: only PC / PS5 / XSX
- $("#platform_PS4, #platform_X1").hide().removeClass("selected")
- $("#platform_PC, #platform_PS5, #platform_XSX").show()
- // force default selection for REX
- $(".add_platform").removeClass("selected")
- $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
+        // REX Platform UI: only PC / PS5 / XSX / SWITCH
+        $("#platform_PS4, #platform_X1").hide().removeClass("selected")
+        $("#platform_switch").show()
+        $("#platform_PC, #platform_PS5, #platform_XSX").show()
+        // force default selection for REX
+        $(".add_platform").removeClass("selected")
+        $("#platform_switch").removeClass("selected")
+        $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
+        $("#platform_switch").addClass("selected")
 
         $("#Loc_SP").show()
         $("#Loc_COOP").hide()
         $("#Loc_ZM").hide()
         $("#Loc_DMZ").show()
-        // 防呆：REX 不支援 COOP / ZM
         if($("#Loc_COOP").hasClass("selected") || $("#Loc_ZM").hasClass("selected")) {
             $("#Loc_COOP").removeClass("selected")
             $("#Loc_ZM").removeClass("selected")
             $("#Loc_SP").addClass("selected")
         }
     }else if(PROJECT == "CHI") {
- // CHI Platform UI: show and select all 5 platforms
- $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
+        $("#platform_switch").hide().removeClass("selected")
+        $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
 
         $("#Loc_SP").hide()
         $("#Loc_COOP").show()
@@ -379,6 +441,8 @@ function updateGameMode() {
         }
     }
     $("#repro_step").val($("#repro_step").val().replace(/CHI|CER|REX/, PROJECT))
+    saveSelectedPlatforms()
+    syncReproStepPlatformOnly()
 }
 // 從localstorage讀project資料
 let PROJECT = "CHI"
@@ -495,42 +559,56 @@ chrome.storage.local.get("platform").then((result) => {
             $("#" + id).addClass("selected")
         })
     }
-
- // enforce platform defaults by project
- if(PROJECT == "REX") {
-     $("#platform_PS4, #platform_X1").hide().removeClass("selected")
-     $("#platform_PC, #platform_PS5, #platform_XSX").show()
-     // If none selected (or only hidden selected), set default 3
-     if($(".add_platform.selected").filter("#platform_PC, #platform_PS5, #platform_XSX").length == 0){
-         $(".add_platform").removeClass("selected")
-         $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
-     }
- } else {
-     // CHI and others: show and select all 5
-     $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
- }
+    if(PROJECT == "REX") {
+        $("#platform_PS4, #platform_X1").hide().removeClass("selected")
+        $("#platform_switch").show()
+        $("#platform_PC, #platform_PS5, #platform_XSX").show()
+        if(getSelectedPlatformElements().filter("#platform_PC, #platform_PS5, #platform_XSX, #platform_switch").length == 0){
+            $(".add_platform").removeClass("selected")
+            $("#platform_switch").removeClass("selected")
+            $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
+            $("#platform_switch").addClass("selected")
+        }
+    } else {
+        $("#platform_switch").hide().removeClass("selected")
+        $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
+    }
+    saveSelectedPlatforms()
+    syncReproStepPlatformOnly()
 })
 // platform是否有被選擇
 $(".add_platform").on("click", function() {
-    let previous_selected = $(".add_platform.selected").map(function() {return $(this).text()}).get().join("/")
+    let previous_selected = getSelectedPlatformText()
     if($(this).hasClass("selected")) {
-        // 至少要選擇一個platform
-        if($(".add_platform.selected").length > 1) {
+        if(getSelectedPlatformElements().length > 1) {
             $(this).removeClass("selected")
         }
     }else {
         $(this).addClass("selected")
     }
-    let current_selected = $(".add_platform.selected").map(function() {return $(this).text()}).get().join("/")
-    // 當language選擇時 上傳localstorage
-    let labels = $('.add_platform.selected').map(function () {
-        return this.id;
-    }).get().join()
-    chrome.storage.local.set({"platform": labels})
-    // 修改repro step的受影響platform 所以要順便更新repro step到localstorage
+    let current_selected = getSelectedPlatformText()
+    saveSelectedPlatforms()
     $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepPlatformOnly()
 })
+$("#platform_switch").on("click", function() {
+    if(PROJECT != "REX") return
+    let previous_selected = getSelectedPlatformText()
+    if($(this).hasClass("selected")) {
+        if(getSelectedPlatformElements().length > 1) {
+            $(this).removeClass("selected")
+        }
+    }else {
+        $(this).addClass("selected")
+    }
+    let current_selected = getSelectedPlatformText()
+    saveSelectedPlatforms()
+    $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
+    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepPlatformOnly()
+})
+
 // 從localstorage讀選擇的language資料
 chrome.storage.local.get("language").then((result) => {
     if(result["language"] != undefined){
@@ -651,17 +729,19 @@ $(".add_label").on("click", function() {
             }
             $(this).addClass("selected")
         }
-    }else if($(this).hasClass("issue_type_1")) { // issue type 1防呆
-        $(".issue_type_1").removeClass("selected")
-        $(this).addClass("selected")
-        $(".issue_type_2").removeClass("selected")
-    }else if($(this).hasClass("issue_type_2")) { // issue type 2防呆
-        $(".issue_type_2").removeClass("selected")
-        $(this).addClass("selected")
-    }else if($(this).hasClass("selected")) {
-        $(this).removeClass("selected")
-    }else {
-        $(this).addClass("selected")
+    }else{
+        $(this).toggleClass("selected")
+        if($(this).hasClass("issue_type_1") && !$(this).hasClass("selected")) {
+            $("." + $(this).val().split("_")[1] + "_specific .issue_type_2").removeClass("selected")
+        }
+        if(PROJECT == "REX" && $(this).attr("id") == "Loc_Audio_PP" && !$(this).hasClass("selected")) {
+            $(".prepro_specific .issue_type_2").removeClass("selected")
+        }
+        if($(this).hasClass("issue_type_2") && $(this).hasClass("selected")) {
+            $(this).siblings(".issue_type_2").not(this).removeClass("selected")
+            $(this).closest('.button-container').siblings('.button-container').find('.issue_type_2').removeClass('selected')
+            $(this).closest('.specific_label').find('.button-container').not($(this).closest('.button-container')).find('.issue_type_2').removeClass('selected')
+        }
     }
     // 當label選擇時 上傳localstorage
     let labels = $('.add_label.selected').map(function () {
@@ -673,16 +753,28 @@ $(".add_label").on("click", function() {
 // 打開衍伸的labels(Text, Audio, Subtitle, Telescope)
 $("button.advanced_type").on("click", function() {
     let button_clicked = $(this)
+    let specific_class = "." + $(this).val().split("_")[1] + "_specific"
     $(".specific_label").hide()
     $("button.advanced_type.selected").each(function() {
-        $("." + $(this).val().split("_")[1] + "_specific").show()
+        let current_specific_class = "." + $(this).val().split("_")[1] + "_specific"
+        $(current_specific_class).show()
         // Text, Subtitle, Audio相關的
-        if(button_clicked.hasClass("issue_type_1")) {
-            $("." + $(this).val().split("_")[1] + "_specific .issue_type_2").first().addClass("selected")
+        if(button_clicked.is(this) && $(this).hasClass("issue_type_1") && $(this).hasClass("selected") && $(current_specific_class + " .issue_type_2.selected").length == 0) {
+            $(current_specific_class + " .issue_type_2").first().addClass("selected")
         }
     })
+    if(PROJECT == "REX" && button_clicked.attr("id") == "Loc_Audio_PP") {
+        if(button_clicked.hasClass("selected")) {
+            if($(".prepro_specific .issue_type_2.selected").length == 0) {
+                $(".prepro_specific .issue_type_2").first().addClass("selected")
+            }
+        }else{
+            $(".prepro_specific .issue_type_2").removeClass("selected")
+        }
+    }
     // 用於非必填的(telescope)
     if(!button_clicked.hasClass("selected")) {
+        $(specific_class + " .issue_type_2").removeClass("selected")
         $("." + $(this).val() + "_subtype").removeClass("selected")
     }
     updateKeywords()
@@ -709,6 +801,7 @@ $("#resource_ids").change(() => {
 chrome.storage.local.get("repro_step").then((result) => {
     if(result["repro_step"] != undefined){
         $("#repro_step").val(result["repro_step"])
+        syncReproStepPlatformOnly()
         // 把textarea展開
         $("#repro_step").css("height", "1px") // textarea和input的預設大小是20px 看起來比較一致
         $("#repro_step").css("height", ($("#repro_step").prop('scrollHeight')) == 20 ? "93px" : ($("#repro_step").prop('scrollHeight')) + 2 + "px") // 多+2是因為有padding
@@ -716,9 +809,10 @@ chrome.storage.local.get("repro_step").then((result) => {
         // 如果沒讀到 就填入預設資料(基本上就是首次使用者)
         $("#repro_step").val(
             "1) Boot up " + PROJECT + " in " + $(".add_lng.selected").text() + " on " + 
-            $(".add_platform.selected").map(function() {return $(this).text()}).get().join("/") + 
+            getSelectedPlatformText() + 
             "\n2)\n3) Observe the issue"
         )
+        syncReproStepPlatformOnly()
     }
 })
 // 當Repro step有修改時 上傳localstorage
@@ -757,16 +851,19 @@ function reset_all() {
     $(".add_lng#lng_" + $("#profile_lng option:selected").attr("id")).addClass("selected")
     if(PROJECT == "REX") {
  $(".add_platform").removeClass("selected")
+ $("#platform_switch").removeClass("selected")
  $("#platform_PS4, #platform_X1").hide()
+ $("#platform_switch").show().addClass("selected")
  $("#platform_PC, #platform_PS5, #platform_XSX").show().addClass("selected")
 }else{
+ $("#platform_switch").hide().removeClass("selected")
  $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
 }
     $("#summary").val("")
     $("#location").val("")
     $("#repro_step").val(
         "1) Boot up " + PROJECT + " in " + $(".add_lng.selected").text() + " on " + 
-        $(".add_platform.selected").map(function() {return $(this).text()}).get().join("/") + 
+        getSelectedPlatformText() + 
         "\n2)\n3) Observe the issue"
     )
     $("#bug_observed").val("")
@@ -776,12 +873,12 @@ function reset_all() {
     chrome.storage.local.set({"location": ""})
     chrome.storage.local.set({
         "repro_step": "1) Boot up " + PROJECT + " in " + $(".add_lng.selected").text() + " on " + 
-        $(".add_platform.selected").map(function() {return $(this).text()}).get().join("/") + 
+        getSelectedPlatformText() + 
         "\n2)\n3) Observe the issue"
     })
     chrome.storage.local.set({"bug_observed": ""})
     chrome.storage.local.set({"resource_ids": ""})
-    chrome.storage.local.set({"platform": $('.add_platform.selected').map(function() {return this.id}).get().join()})
+    saveSelectedPlatforms()
     chrome.storage.local.set({"language": "lng_" + $("#profile_lng option:selected").attr("id")})
     // 如果是JA DE AR, 特殊bug type要顯示
     if(["JA", "DE", "AR"].includes($("#profile_lng option:selected").attr("id"))) {
@@ -803,6 +900,7 @@ function reset_all() {
     }
 $("#label_select").val("")
 chrome.storage.local.set({"label_select": ""})
+    syncReproStepPlatformOnly()
     // 更新keywords
     updateKeywords()
     chrome.storage.local.set({"keywords": $("#keywords").val()})
@@ -819,6 +917,10 @@ $("#reset_all").on("click", () => {
 })
 // 開啟new bug頁
 $("#create_bug").on("click", ()=> {
+    if(PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected") && !($("#Loc_Text").hasClass("selected") || $("#Loc_Audio").hasClass("selected"))) {
+        alert("In Project - REX, Prepro must be selected with Text or Audio.")
+        return
+    }
     $("button.add_label.selected").each(function() {
         let label = $(this).val()
         jira_labels = jira_labels + label + (label != "" ? " " : "")
@@ -834,7 +936,7 @@ if(label_select_val) {
         alert("Please enter jira username in setting and Check if the loc language is correct!")
         return
     }
-    let platform = $(".add_platform.selected").map(function() {return $(this).text()}).get().join("/")
+    let platform = getSelectedPlatformText()
  let display_platform = platform
  if(PROJECT == "REX" && platform == "PC/PS5/XSX") display_platform = "PC/PS5/XSX"
  if(PROJECT == "REX" && platform == "PC/PS5/PS4/XSX/X1") display_platform = "PC/PS5/XSX"
@@ -850,19 +952,23 @@ if(label_select_val) {
     }
     if(PROJECT == "REX") {
  // REX: Jira Platform dropdown selection for customfield_10407
- // Map UI platform buttons to Jira Platform dropdown (multi-select).
  // PC -> PC (Bnet/MS Store/Steam/UbiConnect)
  // PS5 -> Playstation 5 (Gemini/Trinity/Base TestKit/Pro TestKit)
  // XSX -> Xbox Series S/X
+ // SWITCH -> Nintendo Switch 2 (Ounce) - Devkit / Nintendo Switch 2 - Testkit
  let rex_vals = []
- if(platform.includes("PC")) rex_vals.push("17717", "30027", "17716", "32801")
- if(platform.includes("PS5")) rex_vals.push("30023", "30025", "15789", "30024")
- if(platform.includes("XSX")) rex_vals.push("28611", "28612")
- // If nothing matched, fallback to All
- if(rex_vals.length == 0) {
+ const rex_has_pc = platform.includes("PC")
+ const rex_has_ps5 = platform.includes("PS5")
+ const rex_has_xsx = platform.includes("XSX")
+ const rex_has_switch = platform.includes("SWITCH")
+ if(rex_has_pc && rex_has_ps5 && rex_has_xsx && rex_has_switch) {
      platform_query = "&customfield_10407=15785"
  } else {
-     platform_query = rex_vals.map(v => "&customfield_10407=" + v).join("")
+     if(rex_has_pc) rex_vals.push("17717", "30027", "17716", "32801")
+     if(rex_has_ps5) rex_vals.push("30023", "30025", "15789", "30024")
+     if(rex_has_xsx) rex_vals.push("28611", "28612")
+     if(rex_has_switch) rex_vals.push("40501", "40500")
+     platform_query = rex_vals.length == 0 ? "&customfield_10407=15785" : rex_vals.map(v => "&customfield_10407=" + v).join("")
  }
 }else if(platform == "PC/PS5/PS4/XSX/X1") {
         platform_query = "&customfield_" + platform_type[PROJECT]["customfield"] + "=" + platform_type[PROJECT]["PC/PS5/PS4/XSX/X1"]
@@ -978,12 +1084,29 @@ if(label_select_val) {
             loc_type_query = "&customfield_10447=" + loc_type[type]
         }
     })
+    let component_query = ""
+    if(PROJECT == "REX") {
+        if($("#Loc_UI").hasClass("selected")) {
+            component_query = "&components=40646"
+        }else if($("#Loc_Art").hasClass("selected")) {
+            component_query = "&components=16206"
+        }else{
+            component_query = "&components=40650"
+        }
+    }
     // 移除影響query string的符號
     let summary_detail = $("#summary").val()
     let issue_type_1 = $(".issue_type_1.selected").text().toUpperCase()
     let issue_type_2 = $(".issue_type_2.selected").text().replace("_", "/").toUpperCase()
     
     if (issue_type_1 == "PREPRO") issue_type_1 = "AUDIO" // Prepro的issue_type_1是AUDIO
+    if(PROJECT == "REX" && $("#Loc_Art").hasClass("selected")) {
+        issue_type_1 = "ART"
+        issue_type_2 = ""
+    }else if(PROJECT == "REX" && $("#Loc_UI").hasClass("selected")) {
+        issue_type_1 = "UI"
+        issue_type_2 = ""
+    }
     let high_priority_type_2 = ["Loc_Arabic_Safe", "Loc_Arabic_Technical", "Loc_German_Safe", "Loc_Japanese_Safe", "Loc_Korean_Safe", "Loc_Chinese_Safe"]
     high_priority_type_2.forEach(type => {
         if(jira_labels.includes(type)){
@@ -991,7 +1114,7 @@ if(label_select_val) {
         }
     })
     let suffix = ""
-    if(jira_labels.includes("TRG")) {suffix = " [TRG]"}
+    if(PROJECT != "REX" && jira_labels.includes("TRG")) {suffix = " [TRG]"}
     else if(jira_labels.includes("Telescope")) {suffix = " [Telescope]"}
     const linebook = {
         "REX": "COD Linebooks | Rex",
@@ -1042,7 +1165,7 @@ const query_string = {
         "&summary=" + encodeURIComponent(summary) +
         "&description=" + encodeURIComponent(description) +
         "&assignee=" + username + "&customfield_10307=" + found_cl + "&customfield_10604=" + branch + priority_query +
-        label_query + level_query + "&reporter=" + username + atvi_type_query + loc_lng_query + loc_type_query,
+        label_query + level_query + "&reporter=" + username + atvi_type_query + loc_lng_query + loc_type_query + component_query,
 
     "CHI": "https://dev.activision.com/jira/secure/CreateIssueDetails!init.jspa?issuetype=10203&pid=13700" +
         "&customfield_10325=43600" + platform_query + "&customfield_10900=12800&reporter=" + username + "&customfield_10362=37144" +
