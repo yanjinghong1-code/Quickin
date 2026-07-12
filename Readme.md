@@ -4,18 +4,15 @@
 
 Copyright&copy; 2024, Ivy Ho
 # 2026-07-12 by Jinghong
-General REX Updates
-1. Added REX as a supported project in the tool and applied project-specific optimizations.
-2. Improved Found CL detection by extracting the number after Build number: from the Jira Description.
-3. Updated Milestone to a standard dropdown and added a new Ship+Beta option, which sets the Fix Version to REX_PublicBeta.
-4. Updated the Platform options and behavior based on the latest REX requirements.
-5. Optimized the Template page layout to reduce horizontal scrolling and improve field alignment.
-Prepro Bug Template Updates
-1. Set the Summary bug type to AUDIO by default when creating Prepro bugs.
-2. Added Loc Expected Fix options for Prepro bugs.
-3. Automated related audio labels and Summary suffixes based on the selected Loc Expected Fix option.
-4. Corrected Audio PP issue type mappings.
-5. Cleaned up unnecessary labels for Prepro bugs to better align with the REX workflow.
+1. Added REX project support and project-specific optimizations.
+2. Improved Found CL detection from Jira Description.
+3. Added Ship+Beta Milestone option (maps to REX_PublicBeta Fix Version).
+4. Updated Platform options and behavior per latest REX requirements.
+5. Improved Template page layout and field alignment.
+6. Set AUDIO as the default Summary bug type for Prepro bugs.
+7. Added Loc Expected Fix options for Prepro bugs.
+8. Automated audio labels and Summary suffixes based on Loc Expected Fix selection.
+9. Removed unnecessary Prepro labels to streamline the REX workflow.
 # 2026-05-16 by Jinghong
 1. Added new project REX and removed Cerberus.
 2. Updated platform availability for REX (PS4 and Xbox One are no longer shown in UI).
