@@ -77,8 +77,8 @@
             <textarea id="summary" type="text" autocomplete="off" placeholder="Summary" rows="1"></textarea>
             <div class="labels">
                 <div style="display: flex; justify-content: space-between;">
-                    <input id="location" type="text" autocomplete="off" placeholder="Location" style="width: 49%;">
-                    <div style="width: 50%; display: inline-flex; align-items: center; justify-content: space-around;" title="Add season label">
+                    <input id="location" type="text" autocomplete="off" placeholder="Location" style="width: 38%; box-sizing: border-box;">
+                    <div style="width: 60%; display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px; box-sizing: border-box; min-width: 0;" title="Add season label">
                         Milestone
                         <select id="milestone_select" style="width: auto;">
                             <option id="Loc_NA" value="">N/A</option>
@@ -101,14 +101,14 @@
                     </div>
                 </div>
 <div style="display: flex; justify-content: space-between;">
-    <div style="position: relative; width: 49%; display: inline-block;">
-        <input id="found_cl" type="text" autocomplete="off" placeholder="Found CL">
+    <div style="position: relative; width: 38%; display: inline-block; box-sizing: border-box;">
+        <input id="found_cl" type="text" autocomplete="off" placeholder="Found CL" style="box-sizing: border-box;">
         <i class="fa-solid fa-lock-open input-text-lock" id="found_cl_lock" title="prevent reset"></i>
     </div>
 
-    <div style="width: 52%; display: inline-flex; align-items: center; justify-content: space-around;" title="Add label">
+    <div style="width: 60%; display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px; box-sizing: border-box; min-width: 0;" title="Add label">
         Label
-        <select id="label_select" style="width: auto;">
+        <select id="label_select" style="width: 130px; flex-shrink: 0;">
             <option value="">N/A</option>
             <option value="Loc_Bundles">Bundle</option>
             <option value="Loc_BP">Battlepass</option>
@@ -125,6 +125,7 @@
                     <button class="add_platform" id="platform_X1" value="">X1</button>
                 
  <button class="platform_switch" id="platform_switch" type="button" title="Reserved">SWITCH</button>
+                    <button class="platform_external_review" id="platform_external_review" type="button" title="REX only: Jira Platform = All">EXTERNAL REVIEW</button>
 </div>
                 <div class="divider-container"><div class="divider"></div>&emsp;<b>Languages</b>&emsp;<div class="divider"></div></div>
                 <div class="button-container">
@@ -243,10 +244,10 @@
                         <button class="add_label issue_type_2" id="Loc_PP_Context" value="Loc_Audio_Context">Context</button>
                         <button class="add_label issue_type_2" id="Loc_PP_Sync" value="Loc_Audio_Sync">Sync</button>
                         <button class="add_label issue_type_2" id="Loc_PP_Missing" value="Loc_Audio_Missing">Missing</button>
-                        <button class="add_label issue_type_2" id="" value="">Not as Script</button>
+                        <button class="add_label issue_type_2" id="Loc_PP_Not_As_Script" value="Loc_Audio_Delivery_Context">Not as Script</button>
                     </div>
                     <div class="button-container">
-                        <button class="add_label issue_type_2" id="Loc_PP_Delivery_Technical" value="Loc_Audio_Delivery_Technical">Delivery Technical</button>
+                        <button class="add_label issue_type_2" id="Loc_PP_Delivery_Technical" value="Loc_Audio Loc_Audio_Delivery_Technical" data-summary-suffix="[Redelivery]">Delivery Technical</button>
                         <button class="add_label issue_type_2" id="Loc_PP_Delivery_Consistency" value="Loc_Audio_Delivery_Consistency">Delivery Consistency</button>
                     </div>
                     <div class="button-container">
@@ -255,8 +256,8 @@
                     </div>
                     <div class="button-container">
                         <button class="add_label issue_type_2" id="Loc_PP_Delivery_Acting" value="Loc_Audio_Delivery_Acting">Delivery Acting</button>
-                        <button class="add_label" id="Loc_Cinematic" value="Loc_Cinematic">Cinematic</button>
-                        <button class="add_label" id="Loc_Trailer" value="Loc_Trailer">Trailer</button> 
+                        <button class="add_label" id="Loc_Cinematic" value="Loc_Audio Loc_Audio_Cinamatic">Cinematic</button>
+                        <button class="add_label" id="Loc_Trailer" value="Loc_Audio Loc_Audio_Trailer">Trailer</button> 
                     </div>
                 </div>
                 <div class="specific_label telescope_specific" style="display: none;">
@@ -274,6 +275,23 @@
                         <button class="add_label language_specific_issue JA_specific_issue" id="Loc_Japanese_Safe" value="Loc_Japanese_Safe" style="display: none;">JA SAFE</button>
                         <button class="add_label language_specific_issue KO_specific_issue" id="Loc_Korean_Safe" value="Loc_Korean_Safe" style="display: none;">KO SAFE</button>
                         <button class="add_label language_specific_issue ZHS_specific_issue" id="Loc_Chinese_Safe" value="Loc_Chinese_Safe" style="display: none;">Chinese SAFE</button>
+                    </div>
+                </div>
+                <div class="specific_label loc_expected_fix_specific" style="display: none;">
+                    <div class="divider-container"><div class="divider"></div>&emsp;<b>Loc Expected Fix</b>&emsp;<div class="divider"></div></div>
+                    <div class="button-container">
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Edit_File" value="Loc_Audio Loc_Audio_Edit" data-loc-expected-fix="11444" data-summary-suffix="[Edit]">Edit File</button>
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Repurpose_Alt" value="Loc_Audio Loc_Audio_Repurpose_Alt" data-loc-expected-fix="41701" data-summary-suffix="[Repurpose Alt]">Repurpose Alt</button>
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Repurpose_Edit" value="Loc_Audio Loc_Audio_Repurpose_Edit" data-loc-expected-fix="41702" data-summary-suffix="[EDIT/Repurpose]">Repurpose+Edit</button>
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Re_Purpose_Other_File" value="Loc_Audio Loc_Audio_Repurpose" data-loc-expected-fix="11447" data-summary-suffix="[Repurpose]">Re-Purpose Other File</button>
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Re_recording_Needed" value="Loc_Audio Loc_Audio_PU" data-loc-expected-fix="11448" data-summary-suffix="[Pick up]">Re-recording Needed</button>
+                    </div>
+                    <div class="button-container">
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Volume_Boost" value="Loc_Audio Loc_Audio_Volume_Boost" data-loc-expected-fix="11445" data-summary-suffix="[Edit]">Volume Boost</button>
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Volume_Decrease" value="Loc_Audio Loc_Audio_Volume_Decrease" data-loc-expected-fix="11446" data-summary-suffix="[Edit]">Volume Decrease</button>
+                        <button class="add_label loc_expected_fix_issue" id="Rex_Expected_Fix_Re_deliver_file" value="Loc_Audio Loc_Audio_Redelivery" data-loc-expected-fix="13165" data-summary-suffix="[Redelivery]">Re-deliver file</button>
                     </div>
                 </div>
             </div>

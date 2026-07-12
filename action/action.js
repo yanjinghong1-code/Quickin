@@ -338,7 +338,7 @@ function updateKeywords() {
     $("#keywords").val("") // 先清除
     let keywords = []
     $(".single_lng.selected").length == 1 ? keywords.push($(".single_lng.selected").text()) : "" // 填入language如果只有單語言的話
-    keywords.push($(".game_mode.selected").text()) // 填入game mode
+    if(!isRexPreproSelected()) keywords.push($(".game_mode.selected").text()) // 填入game mode
     keywords.push($(".issue_type_2.selected").text()) // 填入issue type 2
     keywords.push($("#location").val()) // 填入location
     $("#keywords").val(keywords.join(", "))
@@ -379,15 +379,36 @@ function syncRexBugTypeUI() {
         $("#Loc_TRG").show()
     }
 }
+
+function syncRexPreproIssueTypeUI() {
+    if(PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected")) {
+        $(".text_specific, .audio_specific").hide()
+        $(".prepro_specific").show()
+        if($(".prepro_specific .issue_type_2.selected").length == 0) {
+            $(".prepro_specific .issue_type_2").first().addClass("selected")
+        }
+    }
+    syncRexPreproUI()
+}
 function getSelectedPlatformElements() {
     let $selected = $(".add_platform.selected")
-    if(PROJECT == "REX" && $("#platform_switch").hasClass("selected")) {
-        $selected = $selected.add($("#platform_switch"))
+    if(PROJECT == "REX") {
+        if($("#platform_external_review").hasClass("selected")) {
+            return $("#platform_external_review")
+        }
+        if($("#platform_switch").hasClass("selected")) {
+            $selected = $selected.add($("#platform_switch"))
+        }
     }
     return $selected
 }
 function getSelectedPlatformText() {
+    if(PROJECT == "REX" && $("#platform_external_review").hasClass("selected")) return "EXTERNAL REVIEW"
     return getSelectedPlatformElements().map(function() {return $(this).text()}).get().join("/")
+}
+function getJiraPlatformText() {
+    if(PROJECT == "REX" && $("#platform_external_review").hasClass("selected")) return "All"
+    return getSelectedPlatformText()
 }
 function getSelectedPlatformIds() {
     return getSelectedPlatformElements().map(function() {return this.id}).get().join()
@@ -403,19 +424,44 @@ function syncReproStepPlatformOnly() {
         chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     }
 }
+function isRexPreproSelected() {
+    return PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected")
+}
+function syncRexPreproUI() {
+    const rexPrepro = isRexPreproSelected()
+    const $gameModeButtons = $(".game_mode").closest(".button-container")
+    const $gameModeDivider = $gameModeButtons.prev(".divider-container")
+    if(rexPrepro) {
+        $gameModeDivider.hide()
+        $gameModeButtons.hide()
+        $(".language_specific").hide()
+        $(".loc_expected_fix_specific").show()
+    }else{
+        $gameModeDivider.show()
+        $gameModeButtons.show()
+        $(".loc_expected_fix_specific").hide()
+    }
+}
+function getRexLocExpectedFixQuery() {
+    if(!isRexPreproSelected()) return ""
+    let selectedFix = $(".loc_expected_fix_issue.selected").data("loc-expected-fix")
+    return selectedFix ? "&customfield_10448=" + selectedFix : ""
+}
 // 切換SP和COOP
 function updateGameMode() {
     syncRexBugTypeUI()
     if(PROJECT == "REX") {
-        // REX Platform UI: only PC / PS5 / XSX / SWITCH
+        // REX Platform UI: only PC / PS5 / XSX / SWITCH, plus EXTERNAL REVIEW as a single-select option
         $("#platform_PS4, #platform_X1").hide().removeClass("selected")
-        $("#platform_switch").show()
+        $("#platform_switch, #platform_external_review").show()
         $("#platform_PC, #platform_PS5, #platform_XSX").show()
-        // force default selection for REX
-        $(".add_platform").removeClass("selected")
-        $("#platform_switch").removeClass("selected")
-        $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
-        $("#platform_switch").addClass("selected")
+        // force default selection for REX unless EXTERNAL REVIEW is selected
+        if(!$("#platform_external_review").hasClass("selected")) {
+            $(".add_platform").removeClass("selected")
+            $("#platform_switch").removeClass("selected")
+            $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
+            $("#platform_switch").addClass("selected")
+        }
 
         $("#Loc_SP").show()
         $("#Loc_COOP").hide()
@@ -427,7 +473,7 @@ function updateGameMode() {
             $("#Loc_SP").addClass("selected")
         }
     }else if(PROJECT == "CHI") {
-        $("#platform_switch").hide().removeClass("selected")
+        $("#platform_switch, #platform_external_review").hide().removeClass("selected")
         $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
 
         $("#Loc_SP").hide()
@@ -443,6 +489,7 @@ function updateGameMode() {
     $("#repro_step").val($("#repro_step").val().replace(/CHI|CER|REX/, PROJECT))
     saveSelectedPlatforms()
     syncReproStepPlatformOnly()
+    syncRexPreproUI()
 }
 // 從localstorage讀project資料
 let PROJECT = "CHI"
@@ -452,11 +499,13 @@ chrome.storage.local.get("project").then((result) => {
     }
     $("#" + PROJECT).attr('selected','selected')
     updateGameMode()
+    syncRexMilestoneUI()
 })
 // 當project有修改時 上傳localstorage
 $("#project_select").change(() => {
     PROJECT = $("#project_select option:selected").val()
     updateGameMode()
+    syncRexMilestoneUI()
     chrome.storage.local.set({"project": PROJECT})
 })
 // 從localstorage讀Summary資料
@@ -474,14 +523,46 @@ $("#summary").on("input", function() {
 })
 // 從localstorage讀season資料
 chrome.storage.local.get("milestone_select").then((result) => {
+    syncRexMilestoneUI()
     if(result["milestone_select"] != undefined){
-        $("#" + result["milestone_select"]).attr('selected','selected')
+        const saved_ids = result["milestone_select"].toString().split(",")
+        const saved_id = saved_ids.includes("Loc_Ship_Beta") ? "Loc_Ship_Beta" : saved_ids.find(id => id && $("#" + id).length)
+        if(saved_id) $("#" + saved_id).prop('selected', true)
     }
     $("#milestone_select").prop('disabled', milestone_lock)
 })
+function getSelectedMilestoneIds() {
+    return $("#milestone_select option:selected").map(function() {return this.id}).get()
+}
+function getSelectedMilestoneValues() {
+    return $("#milestone_select option:selected").map(function() {return this.value}).get().filter(Boolean)
+}
+function saveSelectedMilestones() {
+    chrome.storage.local.set({"milestone_select": getSelectedMilestoneIds().join()})
+}
+function syncRexMilestoneUI() {
+    // REX only: keep Milestone as a normal dropdown like Label, with an extra Ship+Beta option.
+    $("#milestone_select").removeAttr("multiple").removeAttr("title")
+    if(PROJECT == "REX") {
+        if($("#Loc_Ship_Beta").length == 0) {
+            $("#Loc_Beta").after('<option id="Loc_Ship_Beta" value="Loc_Ship Loc_Beta">Ship+Beta</option>')
+        }
+        $("#Loc_Ship_Beta").show()
+    }else{
+        if($("#Loc_Ship_Beta").is(":selected")) {
+            $("#milestone_select").val("")
+        }
+        $("#Loc_Ship_Beta").hide()
+    }
+}
+function getRexFixVersionQuery() {
+    const ids = getSelectedMilestoneIds()
+    const values = getSelectedMilestoneValues().join(" ")
+    return (PROJECT == "REX" && (ids.includes("Loc_Ship_Beta") || (values.includes("Loc_Ship") && values.includes("Loc_Beta")))) ? "&fixVersions=17162" : ""
+}
 // 當season有修改時 上傳localstorage
 $("#milestone_select").change(() => {
-    chrome.storage.local.set({"milestone_select": $("#milestone_select option:selected").attr("id")})
+    saveSelectedMilestones()
 })
 // 從localstorage讀found CL資料
 chrome.storage.local.get("found_cl").then((result) => {
@@ -561,24 +642,29 @@ chrome.storage.local.get("platform").then((result) => {
     }
     if(PROJECT == "REX") {
         $("#platform_PS4, #platform_X1").hide().removeClass("selected")
-        $("#platform_switch").show()
+        $("#platform_switch, #platform_external_review").show()
         $("#platform_PC, #platform_PS5, #platform_XSX").show()
-        if(getSelectedPlatformElements().filter("#platform_PC, #platform_PS5, #platform_XSX, #platform_switch").length == 0){
+        if($("#platform_external_review").hasClass("selected")) {
+            $(".add_platform, #platform_switch").removeClass("selected")
+            $("#platform_external_review").addClass("selected")
+        }else if(getSelectedPlatformElements().filter("#platform_PC, #platform_PS5, #platform_XSX, #platform_switch").length == 0){
             $(".add_platform").removeClass("selected")
             $("#platform_switch").removeClass("selected")
             $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
             $("#platform_switch").addClass("selected")
         }
     } else {
-        $("#platform_switch").hide().removeClass("selected")
+        $("#platform_switch, #platform_external_review").hide().removeClass("selected")
         $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
     }
     saveSelectedPlatforms()
     syncReproStepPlatformOnly()
+    syncRexPreproUI()
 })
 // platform是否有被選擇
 $(".add_platform").on("click", function() {
     let previous_selected = getSelectedPlatformText()
+    if(PROJECT == "REX") $("#platform_external_review").removeClass("selected")
     if($(this).hasClass("selected")) {
         if(getSelectedPlatformElements().length > 1) {
             $(this).removeClass("selected")
@@ -595,6 +681,7 @@ $(".add_platform").on("click", function() {
 $("#platform_switch").on("click", function() {
     if(PROJECT != "REX") return
     let previous_selected = getSelectedPlatformText()
+    $("#platform_external_review").removeClass("selected")
     if($(this).hasClass("selected")) {
         if(getSelectedPlatformElements().length > 1) {
             $(this).removeClass("selected")
@@ -608,6 +695,18 @@ $("#platform_switch").on("click", function() {
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     syncReproStepPlatformOnly()
 })
+$("#platform_external_review").on("click", function() {
+    if(PROJECT != "REX") return
+    let previous_selected = getSelectedPlatformText()
+    $(".add_platform, #platform_switch").removeClass("selected")
+    $(this).addClass("selected")
+    let current_selected = getSelectedPlatformText()
+    saveSelectedPlatforms()
+    $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
+    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepPlatformOnly()
+})
+
 
 // 從localstorage讀選擇的language資料
 chrome.storage.local.get("language").then((result) => {
@@ -701,6 +800,7 @@ $(".add_lng").on("click", function() {
     }
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     updateKeywords()
+    syncRexPreproUI()
 })
 // 從localstorage讀選擇的label資料
 chrome.storage.local.get("labels").then((result) => {
@@ -711,6 +811,7 @@ chrome.storage.local.get("labels").then((result) => {
         $(".add_label.advanced_type.selected").each(function() {
             $("." + $(this).text() + "_specific").show()
         })
+        syncRexPreproUI()
     }else{
         reset_all()
     }
@@ -727,6 +828,13 @@ $(".add_label").on("click", function() {
             if(document.getElementsByClassName($(this).prop("classList") + " selected").length > 0){
                 $(".language_specific_issue").removeClass("selected")
             }
+            $(this).addClass("selected")
+        }
+    }else if($(this).hasClass("loc_expected_fix_issue")) {
+        if($(this).hasClass("selected")) {
+            $(this).removeClass("selected")
+        }else{
+            $(".loc_expected_fix_issue").removeClass("selected")
             $(this).addClass("selected")
         }
     }else{
@@ -748,6 +856,8 @@ $(".add_label").on("click", function() {
         return this.id;
     }).get().join()
     chrome.storage.local.set({"labels": labels})
+    syncRexPreproIssueTypeUI()
+    syncRexPreproUI()
     updateKeywords()
 })
 // 打開衍伸的labels(Text, Audio, Subtitle, Telescope)
@@ -783,6 +893,8 @@ $("button.advanced_type").on("click", function() {
         return this.id;
     }).get().join()
     chrome.storage.local.set({"labels": labels})
+    syncRexPreproIssueTypeUI()
+    syncRexPreproUI()
 })
 // 從localstorage讀Resource IDs資料
 chrome.storage.local.get("resource_ids").then((result) => {
@@ -851,12 +963,13 @@ function reset_all() {
     $(".add_lng#lng_" + $("#profile_lng option:selected").attr("id")).addClass("selected")
     if(PROJECT == "REX") {
  $(".add_platform").removeClass("selected")
- $("#platform_switch").removeClass("selected")
+ $("#platform_switch, #platform_external_review").removeClass("selected")
  $("#platform_PS4, #platform_X1").hide()
+ $("#platform_external_review").show()
  $("#platform_switch").show().addClass("selected")
  $("#platform_PC, #platform_PS5, #platform_XSX").show().addClass("selected")
 }else{
- $("#platform_switch").hide().removeClass("selected")
+ $("#platform_switch, #platform_external_review").hide().removeClass("selected")
  $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
 }
     $("#summary").val("")
@@ -917,15 +1030,11 @@ $("#reset_all").on("click", () => {
 })
 // 開啟new bug頁
 $("#create_bug").on("click", ()=> {
-    if(PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected") && !($("#Loc_Text").hasClass("selected") || $("#Loc_Audio").hasClass("selected"))) {
-        alert("In Project - REX, Prepro must be selected with Text or Audio.")
-        return
-    }
     $("button.add_label.selected").each(function() {
         let label = $(this).val()
         jira_labels = jira_labels + label + (label != "" ? " " : "")
     })
-    jira_labels += $("#milestone_select").val()
+    jira_labels += getSelectedMilestoneValues().join(" ")
 let label_select_val = $("#label_select").val()
 if(label_select_val) {
     jira_labels += " " + label_select_val
@@ -937,6 +1046,7 @@ if(label_select_val) {
         return
     }
     let platform = getSelectedPlatformText()
+    let jira_platform = getJiraPlatformText()
  let display_platform = platform
  if(PROJECT == "REX" && platform == "PC/PS5/XSX") display_platform = "PC/PS5/XSX"
  if(PROJECT == "REX" && platform == "PC/PS5/PS4/XSX/X1") display_platform = "PC/PS5/XSX"
@@ -957,11 +1067,12 @@ if(label_select_val) {
  // XSX -> Xbox Series S/X
  // SWITCH -> Nintendo Switch 2 (Ounce) - Devkit / Nintendo Switch 2 - Testkit
  let rex_vals = []
- const rex_has_pc = platform.includes("PC")
- const rex_has_ps5 = platform.includes("PS5")
- const rex_has_xsx = platform.includes("XSX")
- const rex_has_switch = platform.includes("SWITCH")
- if(rex_has_pc && rex_has_ps5 && rex_has_xsx && rex_has_switch) {
+ const rex_has_pc = jira_platform.includes("PC")
+ const rex_has_ps5 = jira_platform.includes("PS5")
+ const rex_has_xsx = jira_platform.includes("XSX")
+ const rex_has_switch = jira_platform.includes("SWITCH")
+ const rex_is_all = jira_platform == "All"
+ if(rex_is_all || (rex_has_pc && rex_has_ps5 && rex_has_xsx && rex_has_switch)) {
      platform_query = "&customfield_10407=15785"
  } else {
      if(rex_has_pc) rex_vals.push("17717", "30027", "17716", "32801")
@@ -981,7 +1092,7 @@ if(label_select_val) {
         }
         console.log(platform_query)
     }
-    if($("#Loc_Audio_PP").hasClass("selected")) platform = "AUDIO REVIEW" // Prepro Summary的platform是AUDIO REVIEW
+    // Prepro Summary keeps selected platform; bug type is handled below
 
     const game_mode = {
     "REX": {
@@ -1021,7 +1132,12 @@ if(label_select_val) {
         "CHI": "Chimera",
         "REX": "Rex"
     }
-    let label_query = "&labels=Loc&labels=Loc_" + project_fullname[PROJECT] + jira_labels.trim().split(" ").map(label => "&labels=" + label).join("")
+    let jira_label_list = jira_labels.trim().split(" ").filter(label => label != "")
+    if(isRexPreproSelected()) {
+        const rex_prepro_excluded_labels = ["Loc_Prod", "Loc_Global", "Loc_SP", "Loc_MP", "Loc_WZ", "Loc_DMZ"]
+        jira_label_list = jira_label_list.filter(label => !rex_prepro_excluded_labels.includes(label))
+    }
+    let label_query = "&labels=Loc&labels=Loc_" + project_fullname[PROJECT] + (PROJECT == "REX" && !isRexPreproSelected() ? "&labels=Loc_Prod" : "") + jira_label_list.map(label => "&labels=" + label).join("")
     let lng_selected = $('.add_lng.selected')
     let LNG = lng_selected.map(function() {return $(this).text()}).get().join("/")
     if(lng_selected.length == 1 && lng_selected[0].id != "lng_ML" && lng_selected[0].id != "lng_ALL") { // 單一語言才需要加該語言的label
@@ -1084,6 +1200,10 @@ if(label_select_val) {
             loc_type_query = "&customfield_10447=" + loc_type[type]
         }
     })
+    // REX Prepro: Audio PP Context should map to Audio - Context (11424), not Delivery Context/Consistency.
+    if(PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected") && $("#Loc_PP_Context").hasClass("selected")) {
+        loc_type_query = "&customfield_10447=11424"
+    }
     let component_query = ""
     if(PROJECT == "REX") {
         if($("#Loc_UI").hasClass("selected")) {
@@ -1099,7 +1219,7 @@ if(label_select_val) {
     let issue_type_1 = $(".issue_type_1.selected").text().toUpperCase()
     let issue_type_2 = $(".issue_type_2.selected").text().replace("_", "/").toUpperCase()
     
-    if (issue_type_1 == "PREPRO") issue_type_1 = "AUDIO" // Prepro的issue_type_1是AUDIO
+    if (issue_type_1 == "PREPRO" || (PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected"))) issue_type_1 = "AUDIO" // Prepro的issue_type_1是AUDIO
     if(PROJECT == "REX" && $("#Loc_Art").hasClass("selected")) {
         issue_type_1 = "ART"
         issue_type_2 = ""
@@ -1116,12 +1236,15 @@ if(label_select_val) {
     let suffix = ""
     if(PROJECT != "REX" && jira_labels.includes("TRG")) {suffix = " [TRG]"}
     else if(jira_labels.includes("Telescope")) {suffix = " [Telescope]"}
+    const rex_summary_suffix = $(".loc_expected_fix_issue.selected, .prepro_specific .issue_type_2.selected").data("summary-suffix")
+    if(PROJECT == "REX" && rex_summary_suffix) {suffix += " " + rex_summary_suffix}
     const linebook = {
         "REX": "COD Linebooks | Rex",
         "CHI": "COD 2025 Linebooks | Chimera"
     }
-    let summary = "LOC: " + PROJECT + " – " + display_platform + " – " + LNG + " – " + issue_type_1 + 
-                  " – " + issue_type_2 + (issue_type_2 != "" ? " – ": "") + area + "/" + location + " – " + summary_detail + suffix
+    let summary_location_part = (PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected")) ? location : area + "/" + location
+    let summary = "LOC: " + PROJECT + " – " + display_platform + " – " + LNG + " – " + issue_type_1 +   
+                  " – " + issue_type_2 + (issue_type_2 != "" ? " – ": "") + summary_location_part + " – " + summary_detail + suffix
     let amend_in_xloc_type = ["Amendment", "Consistency", "Context", "Spelling_Grammar"]
     let project = jira_labels.includes("Subtitle") ? linebook[PROJECT]: "Call of Duty | Trunk"
     let action_required = amend_in_xloc_type.some(type => jira_labels.includes(type)) ?
@@ -1165,7 +1288,7 @@ const query_string = {
         "&summary=" + encodeURIComponent(summary) +
         "&description=" + encodeURIComponent(description) +
         "&assignee=" + username + "&customfield_10307=" + found_cl + "&customfield_10604=" + branch + priority_query +
-        label_query + level_query + "&reporter=" + username + atvi_type_query + loc_lng_query + loc_type_query + component_query,
+        label_query + level_query + "&reporter=" + username + atvi_type_query + loc_lng_query + loc_type_query + getRexLocExpectedFixQuery() + component_query + getRexFixVersionQuery(),
 
     "CHI": "https://dev.activision.com/jira/secure/CreateIssueDetails!init.jspa?issuetype=10203&pid=13700" +
         "&customfield_10325=43600" + platform_query + "&customfield_10900=12800&reporter=" + username + "&customfield_10362=37144" +
@@ -1309,6 +1432,54 @@ const full_name_lang = ["EN", "FR", "IT", "DE", "ES", "RU", "PL", "AR", "ENAR", 
 const abbreviate_lang = { "E": "EN", "F": "FR", "I": "IT", "G": "DE", "S": "ES" };
 
 // 取得jira上的bug資訊 填入file naming tab中!!!
+
+function extractFoundCLFromDescription(description) {
+    const text = description || ""
+    // Matches Description text like: Build number: **27690041**, Build number: *27690041*, Build number: trunk_27690041
+    const match = text.match(/Build number:\s*\*{0,2}\s*(?:[A-Za-z]+_)?([0-9]+)/i)
+    return match ? match[1] : ""
+}
+async function readActiveIssuePageText() {
+    try {
+        const tabs = await chrome.tabs.query({active: true, currentWindow: true})
+        if(!tabs || tabs.length == 0 || !tabs[0].id) return ""
+        let page_text = ""
+        // Try direct DOM read first.
+        if(chrome.scripting && chrome.scripting.executeScript) {
+            const results = await chrome.scripting.executeScript({
+                target: {tabId: tabs[0].id},
+                func: () => document.body ? document.body.innerText : ""
+            })
+            page_text = results && results[0] && results[0].result ? results[0].result : ""
+        }else if(chrome.tabs.executeScript) {
+            const results = await new Promise(resolve => chrome.tabs.executeScript(tabs[0].id, {code: 'document.body ? document.body.innerText : ""'}, resolve))
+            page_text = results && results[0] ? results[0] : ""
+        }
+        // If DOM read is unavailable, try fetching the current issue page / XML / printable view with login cookies.
+        const url = tabs[0].url || ""
+        const key_match = url.match(/([A-Z]+-\d+)/)
+        if(key_match) {
+            const key = key_match[1]
+            const origin_match = url.match(/^(https?:\/\/[^\/]+)/)
+            const origin = origin_match ? origin_match[1] : "https://dev.activision.com"
+            const urls = [
+                `${origin}/jira/browse/${key}`,
+                `${origin}/jira/si/jira.issueviews:issue-xml/${key}/${key}.xml`,
+                `${origin}/jira/si/jira.issueviews:issue-html/${key}/${key}.html`
+            ]
+            for(const u of urls) {
+                try {
+                    const r = await fetch(u, {credentials: "include"})
+                    if(r.ok) page_text += "\n" + await r.text()
+                } catch(e) {}
+            }
+        }
+        return page_text
+    } catch(e) {
+        console.log("Cannot read active Jira issue page text", e)
+    }
+    return ""
+}
 async function read_bug_data() {
     let bug_data = await chrome.runtime.sendMessage({ type: "read_bug_data" });
 
@@ -1348,15 +1519,17 @@ async function read_bug_data() {
     }
 
     showLngWarning();
-
+    const bug_description = bug_data.description || bug_data.desc || bug_data.bug_description || bug_data.description_text || "";
+    const active_issue_text = await readActiveIssuePageText();
+    const bug_found_cl = extractFoundCLFromDescription(bug_description) || extractFoundCLFromDescription(active_issue_text) || bug_data.found_cl || bug_data.foundCL || bug_data.release_id || "";
     if (!$("#regression_lock").hasClass("fa-lock-open")) {
         const rid = await chrome.storage.local.get("release_id");
         if (rid["release_id"] != undefined) $("#release_id").val(rid["release_id"]);
     } else {
-        $("#release_id").val(bug_data.release_id);
+        $("#release_id").val(bug_found_cl);
     }
 
-    current_release_id = bug_data.release_id;
+    current_release_id = bug_found_cl;
  chrome.storage.local.set({
         file_name: {
             bug_id: $("#bug_id").val(),
@@ -1391,7 +1564,7 @@ function updateFileName() {
     const type2 = $("#bug_type_2").val();
 
  const ridRaw = ($("#release_id").val() || "").trim();
- const rid = ridRaw.split("_").length > 1 ? ridRaw.split("_")[1] : ridRaw;
+ const rid = (ridRaw.split("_").length > 1 ? ridRaw.split("_")[1] : ridRaw).replace(/\D/g, "");
     if (clean_pic_mode) {
         $("#file_name").val(
             (bugId + "_" + lng + "_" + type2)
