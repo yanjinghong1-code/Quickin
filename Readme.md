@@ -1,6 +1,4 @@
 >[!IMPORTANT]
->
->**We are currently in Beta Test**
 
 Copyright&copy; 2024, Ivy Ho
 # 2026-07-12 by Jinghong
