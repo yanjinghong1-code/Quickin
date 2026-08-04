@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Khah Kin Leh",
-    "version": "2.2.5",
-    "description": "Help you speed up regression",
+    "name": "Kakin",
+    "version": "2.4.2",
+    "description": "Helps you log/regress bugs faster, quickly get the Dvars you need, and improve your work efficiency.",
     "permissions": [
         "contextMenus",
         "clipboardWrite",
@@ -41,5 +41,4 @@
         "default_popup": "./action/action.html",
         "default_icon": "./images/icon-128.png"
     }
-
 }

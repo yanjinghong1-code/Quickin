@@ -19,6 +19,18 @@ if (window.location.host === "xloc.activision.com") {
  }
 
 
+    function isCallOfDutyTrunkPage() {
+        return document.body && document.body.innerText.includes("Call of Duty - Trunk");
+    }
+
+    function generateCallDvarFromRid(rid) {
+        if (!rid) return "";
+        const match = rid.trim().match(/\.ste_([^\s<]+)/i);
+        if (!match) return "";
+        const alias = match[1].toLowerCase().replace(/_\d+$/, "");
+        return alias ? "snd_start_alias " + alias : "";
+    }
+
     function ensureBatchButtonsExist() {
         if (document.getElementById("batch-btn-container")) return;
         const table = document.querySelector("table.rgMasterTable");
@@ -40,13 +52,15 @@ if (window.location.host === "xloc.activision.com") {
         const btnRid = createBtn("batch-copy-all-rids", "Copy All Resource IDs");
         const btnFn = createBtn("batch-copy-all-filenames", "Copy All Filenames");
         const btnDvar = createBtn("batch-copy-all-dvars", "Copy All Dvars");
+        const btnCallDvar = createBtn("batch-call-all-dvars", "Copy All Dvars");
 
-        container.append(btnRid, btnFn, btnDvar);
+        container.append(btnRid, btnFn, btnDvar, btnCallDvar);
         table.parentNode.insertBefore(container, table);
 
         btnRid.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.rid).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
         btnFn.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.filename).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
         btnDvar.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.dvar).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
+        btnCallDvar.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.callDvar).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
     }
 
     function processRows() {
@@ -58,6 +72,7 @@ if (window.location.host === "xloc.activision.com") {
         let notes_idx = headers.findIndex(h => h.includes("string notes"));
 
         let hasAnyFilename = false;
+        let hasAnyCallDvar = false;
 
         table.querySelectorAll("tbody tr").forEach(tr => {
             let cells = tr.querySelectorAll("td");
@@ -71,6 +86,8 @@ if (window.location.host === "xloc.activision.com") {
                 dataSpan.dataset.rid = (rid_idx !== -1 && cells[rid_idx]) ? cells[rid_idx].textContent.trim() : "";
                 tr.appendChild(dataSpan);
             }
+            dataSpan.dataset.callDvar = generateCallDvarFromRid(dataSpan.dataset.rid);
+            if (dataSpan.dataset.callDvar) hasAnyCallDvar = true;
 
             if (notes_idx !== -1 && cells[notes_idx]) {
                 let noteDiv = cells[notes_idx].querySelector("div.xloc_FormatForHTML");
@@ -101,7 +118,7 @@ if (window.location.host === "xloc.activision.com") {
                             if(filename.includes("dx_br")){
                                 dvar = "snd_start_alias " + filename.split("_").slice(0, 6).join("_");
                             } else if(filename.includes("dx_mp")) {
-                                dvar = "snd_start_alias " + parts[0] + "_" + parts[1] + "_" + parts[3] + "_" + parts[5] + "_" + parts[4];
+                                dvar = "snd_start_alias " + parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_" + parts[5] + "_" + parts[4];
                             } else if(filename.includes("dx_zm")) {
                                 dvar = "snd_start_alias " + filename.replace(postfix_regex, "");
                             } else if(filename.includes("dx_wc")) {
@@ -136,9 +153,13 @@ if (window.location.host === "xloc.activision.com") {
 
         const btnFn = document.getElementById("batch-copy-all-filenames");
         const btnDvar = document.getElementById("batch-copy-all-dvars");
+        const btnCallDvar = document.getElementById("batch-call-all-dvars");
         if (btnFn && btnDvar) {
             btnFn.style.display = hasAnyFilename ? "block" : "none";
             btnDvar.style.display = hasAnyFilename ? "block" : "none";
+        }
+        if (btnCallDvar) {
+            btnCallDvar.style.display = (isCallOfDutyTrunkPage() && hasAnyCallDvar) ? "block" : "none";
         }
     }
 

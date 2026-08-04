@@ -32,7 +32,12 @@ $('textarea').on('input', (event) => {
 
 // 從連結下載
 function downloadURL(url) {
-    chrome.runtime.sendMessage({type: "download_file", url: url});
+    if(!url) return
+    if(chrome.downloads && chrome.downloads.download) {
+        chrome.downloads.download({url: url})
+    }else{
+        chrome.runtime.sendMessage({type: "download_file", url: url})
+    }
 }
 // 取得google sheet資料
 const fetchGoogleWorkbook = async() => {
@@ -50,15 +55,8 @@ const fetchGoogleWorkbook = async() => {
     return workbook
 }
 
-// 是否詢問更新
-update_request = 1
-chrome.storage.local.get("update_request").then((result) => {
-    if(result["update_request"] != null){
-        update_request = result["update_request"]
-    }else{
-        chrome.storage.local.set({"update_request": 1 }).then(() => {})
-    }
-})
+// 更新提示：按 latest_version 記錄已提醒版本，避免舊版使用者錯過之後的新版本
+let last_prompted_version = ""
 
 // 讀取manifest.json中的版本
 fetch("../manifest.json").then(response => {
@@ -75,22 +73,22 @@ fetch("../manifest.json").then(response => {
         update_note = version_sheet[1][2] // 更新內容
         // 如果版本不同
         if(current_version != latest_version){
-            // 只提醒一次
-            if(update_request){
-                // 按確認
-                if(confirm("Latest version available! Do you want to download now?" + "\n" + update_note) == true) {
-                    downloadURL(latest_file)
+            chrome.storage.local.get("last_prompted_version").then((result) => {
+                last_prompted_version = result["last_prompted_version"] || ""
+                // 同一個 latest version 只提醒一次；如果 Sheet 更新到新版本，會重新提醒
+                if(last_prompted_version != latest_version){
+                    if(confirm("Latest version available! Do you want to download now?" + "\n" + update_note) == true) {
+                        downloadURL(latest_file)
+                    }
+                    last_prompted_version = latest_version
+                    chrome.storage.local.set({"last_prompted_version": latest_version}).then(() => {})
                 }
-            }
-            chrome.storage.local.set({"update_request": 0 }).then(() => {})
+            })
             $("#version").append(" <i title=\"Update Available\" class=\"fa fa-download\" style=\"cursor: pointer;\"></i>")
             $("#version>.fa-download").on("click", () => {
                 downloadURL(latest_file)
                 $("#version").html($("#version").html().replace("<i title=\"Update Available\" class=\"fa fa-download\" style=\"cursor: pointer;\"></i>", "<i class=\"fa-solid fa-check\"></i>"))
             })
-        }else{
-            // 開啟下次更新
-            chrome.storage.local.set({"update_request": 1 }).then(() => {})
         }
         // 固定dropdown寬度並填入dvar options
         measureWhenHidden($("#dvar"))
@@ -416,6 +414,23 @@ function getSelectedPlatformIds() {
 function saveSelectedPlatforms() {
     chrome.storage.local.set({"platform": getSelectedPlatformIds()})
 }
+function getDefaultReproStep() {
+    return "1) Boot up " + PROJECT + " in " + $(".add_lng.selected").text() + " on " + getSelectedPlatformText() + "\n2)\n3) Observe the issue"
+}
+function getExternalReviewReproStep() {
+    return "This issue has been spotted during the external audio review.\nCL: " + $("#found_cl").val().trim() + "\nOperator: " + $("#location").val()
+}
+function isAutoReproStep(text) {
+    return /^1\) Boot up .*\n2\)\n3\) Observe the issue$/.test(text || "") ||
+           /^This issue has been spotted during the external audio review\.\nCL:.*\nOperator: ?.*$/.test(text || "")
+}
+function syncReproStepDefaultByPlatform(force = false) {
+    const current = $("#repro_step").val() || ""
+    if(!force && current != "" && !isAutoReproStep(current)) return
+    const next = (PROJECT == "REX" && $("#platform_external_review").hasClass("selected")) ? getExternalReviewReproStep() : getDefaultReproStep()
+    $("#repro_step").val(next)
+    chrome.storage.local.set({"repro_step": next})
+}
 function syncReproStepPlatformOnly() {
     let lines = ($("#repro_step").val() || "").split("\n")
     if(lines.length > 0 && lines[0].includes(" on ")) {
@@ -427,36 +442,85 @@ function syncReproStepPlatformOnly() {
 function isRexPreproSelected() {
     return PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected")
 }
+function isRexAudioSelected() {
+    return PROJECT == "REX" && $(".issue_type_1.selected").filter(function() {
+        const id = this.id || ""
+        const value = $(this).val() || ""
+        const text = $(this).text().trim().toUpperCase()
+        return id == "Loc_Audio" || value == "Loc_Audio" || text == "AUDIO"
+    }).length > 0
+}
+function isRexAudioOrPreproSelected() {
+    return isRexPreproSelected() || isRexAudioSelected()
+}
+function getRexExpectedFixAudioLabels() {
+    if(!isRexAudioOrPreproSelected()) return []
+    const labels = ["Loc_Audio"]
+    const $fix = $(".loc_expected_fix_issue.selected")
+    if($fix.length == 0) return labels
+    const fix_info = (($fix.attr("id") || "") + " " + ($fix.data("loc-expected-fix") || "") + " " + $fix.text()).toLowerCase()
+    const addLabel = (label) => { if(!labels.includes(label)) labels.push(label) }
+    if(fix_info.includes("edit_file") || fix_info.includes("edit file")) addLabel("Loc_Audio_Edit")
+    else if(fix_info.includes("repurpose_alt") || fix_info.includes("repurpose alt")) addLabel("Loc_Audio_Repurpose_Alt")
+    else if(fix_info.includes("repurpose_edit") || fix_info.includes("repurpose+edit")) addLabel("Loc_Audio_Repurpose_Edit")
+    else if(fix_info.includes("delivery_technical") || fix_info.includes("delivery technical")) addLabel("Loc_Audio_Delivery_Technical")
+    else if(fix_info.includes("re_purpose_other_file") || fix_info.includes("re-purpose other file") || fix_info.includes("repurpose other file")) addLabel("Loc_Audio_Repurpose")
+    else if(fix_info.includes("re_recording_needed") || fix_info.includes("re-recording needed") || fix_info.includes("rer-recording needed")) addLabel("Loc_Audio_PU")
+    else if(fix_info.includes("volume_boost") || fix_info.includes("volume boost")) addLabel("Loc_Audio_Volume_Boost")
+    else if(fix_info.includes("volume_decrease") || fix_info.includes("volume decrease")) addLabel("Loc_Audio_Volume_Decrease")
+    else if(fix_info.includes("re_deliver_file") || fix_info.includes("re-deliver file")) addLabel("Loc_Audio_Redelivery")
+    return labels
+}
 function syncRexPreproUI() {
     const rexPrepro = isRexPreproSelected()
+    const rexAudioOrPrepro = isRexAudioOrPreproSelected()
     const $gameModeButtons = $(".game_mode").closest(".button-container")
     const $gameModeDivider = $gameModeButtons.prev(".divider-container")
     if(rexPrepro) {
         $gameModeDivider.hide()
         $gameModeButtons.hide()
         $(".language_specific").hide()
-        $(".loc_expected_fix_specific").show()
     }else{
         $gameModeDivider.show()
         $gameModeButtons.show()
+    }
+    if(rexAudioOrPrepro) {
+        $(".loc_expected_fix_specific").show()
+        $("#Loc_PP_Multiple").show()
+    }else{
         $(".loc_expected_fix_specific").hide()
+        $("#Loc_PP_Multiple").hide().removeClass("selected")
     }
 }
 function getRexLocExpectedFixQuery() {
-    if(!isRexPreproSelected()) return ""
+    if(!isRexAudioOrPreproSelected()) return ""
     let selectedFix = $(".loc_expected_fix_issue.selected").data("loc-expected-fix")
     return selectedFix ? "&customfield_10448=" + selectedFix : ""
 }
+function ensureRexMultipleButton() {
+    if($("#Loc_PP_Multiple").length == 0) {
+        $("#Loc_Trailer").after('\n                        <button class="add_label issue_type_2" id="Loc_PP_Multiple" value="Loc_Audio_Multiple" style="display: none;">Multiple</button>')
+    }
+}
+ensureRexMultipleButton()
+function getResourceIdList() {
+    return ($("#resource_ids").val() || "").split(String.fromCharCode(13)).join("").split(String.fromCharCode(10)).map(id => id.trim()).filter(id => id != "")
+}
+function getLocAffectedFilesQuery() {
+    if(!isRexAudioOrPreproSelected()) return ""
+    const count = getResourceIdList().length
+    return count > 0 ? "&customfield_10449=" + count : ""
+}
 // 切換SP和COOP
-function updateGameMode() {
+function updateGameMode(persistPlatform = false) {
     syncRexBugTypeUI()
     if(PROJECT == "REX") {
         // REX Platform UI: only PC / PS5 / XSX / SWITCH, plus EXTERNAL REVIEW as a single-select option
         $("#platform_PS4, #platform_X1").hide().removeClass("selected")
         $("#platform_switch, #platform_external_review").show()
         $("#platform_PC, #platform_PS5, #platform_XSX").show()
-        // force default selection for REX unless EXTERNAL REVIEW is selected
-        if(!$("#platform_external_review").hasClass("selected")) {
+        // only use the REX default when nothing is selected, so reopening the tool does not overwrite the saved platform
+        if(!$("#platform_external_review").hasClass("selected") && getSelectedPlatformElements().filter("#platform_PC, #platform_PS5, #platform_XSX, #platform_switch").length == 0) {
             $(".add_platform").removeClass("selected")
             $("#platform_switch").removeClass("selected")
             $("#platform_PC, #platform_PS5, #platform_XSX").addClass("selected")
@@ -487,7 +551,8 @@ function updateGameMode() {
         }
     }
     $("#repro_step").val($("#repro_step").val().replace(/CHI|CER|REX/, PROJECT))
-    saveSelectedPlatforms()
+    if(persistPlatform) saveSelectedPlatforms()
+    syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
     syncRexPreproUI()
 }
@@ -504,7 +569,7 @@ chrome.storage.local.get("project").then((result) => {
 // 當project有修改時 上傳localstorage
 $("#project_select").change(() => {
     PROJECT = $("#project_select option:selected").val()
-    updateGameMode()
+    updateGameMode(true)
     syncRexMilestoneUI()
     chrome.storage.local.set({"project": PROJECT})
 })
@@ -573,6 +638,7 @@ chrome.storage.local.get("found_cl").then((result) => {
 // 當Found CL有修改時 上傳localstorage
 $("#found_cl").change(() => {
     chrome.storage.local.set({"found_cl": $("#found_cl").val()})
+    syncReproStepDefaultByPlatform()
 })
 // 從localstorage讀Found CL lock資料
 chrome.storage.local.get("found_cl_lock").then((result) => {
@@ -602,6 +668,7 @@ chrome.storage.local.get("location").then((result) => {
 // 當Location有修改時 上傳localstorage 順便更新keywords
 $("#location").change(() => {
     chrome.storage.local.set({"location": $("#location").val()})
+    syncReproStepDefaultByPlatform()
     updateKeywords()
 })
 // 從localstorage讀Label Select資料
@@ -635,8 +702,10 @@ $("#milestone_lock").on("click", function() {
 })
 // 從localstorage讀選擇的platform資料
 chrome.storage.local.get("platform").then((result) => {
-    if(result["platform"] != undefined){
-        result["platform"].split(",").forEach((id) => {
+    const saved_platform = result["platform"]
+    if(saved_platform != undefined && saved_platform != ""){
+        $(".add_platform, #platform_switch, #platform_external_review").removeClass("selected")
+        saved_platform.split(",").forEach((id) => {
             $("#" + id).addClass("selected")
         })
     }
@@ -658,6 +727,7 @@ chrome.storage.local.get("platform").then((result) => {
         $("#platform_PC, #platform_PS5, #platform_PS4, #platform_XSX, #platform_X1").show().addClass("selected")
     }
     saveSelectedPlatforms()
+    syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
     syncRexPreproUI()
 })
@@ -676,6 +746,7 @@ $(".add_platform").on("click", function() {
     saveSelectedPlatforms()
     $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
 })
 $("#platform_switch").on("click", function() {
@@ -693,6 +764,7 @@ $("#platform_switch").on("click", function() {
     saveSelectedPlatforms()
     $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
 })
 $("#platform_external_review").on("click", function() {
@@ -704,6 +776,7 @@ $("#platform_external_review").on("click", function() {
     saveSelectedPlatforms()
     $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
 })
 
@@ -799,6 +872,7 @@ $(".add_lng").on("click", function() {
         $("#repro_step").val($("#repro_step").val().replace(previous_selected, $(".add_lng.selected").text()))
     }
     chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    syncReproStepDefaultByPlatform()
     updateKeywords()
     syncRexPreproUI()
 })
@@ -1050,6 +1124,8 @@ if(label_select_val) {
  let display_platform = platform
  if(PROJECT == "REX" && platform == "PC/PS5/XSX") display_platform = "PC/PS5/XSX"
  if(PROJECT == "REX" && platform == "PC/PS5/PS4/XSX/X1") display_platform = "PC/PS5/XSX"
+ // REX summary only: show Switch platform as Switch 2 in the Jira summary
+ if(PROJECT == "REX") display_platform = display_platform.replace(/\bSWITCH\b/g, "Switch 2")
 
     let platform_query = ""
     const platform_type = {
@@ -1133,10 +1209,23 @@ if(label_select_val) {
         "REX": "Rex"
     }
     let jira_label_list = jira_labels.trim().split(" ").filter(label => label != "")
+    const rex_audio_expected_fix_label_set = ["Loc_Audio", "Loc_Audio_Edit", "Loc_Audio_Repurpose_Alt", "Loc_Audio_Repurpose_Edit", "Loc_Audio_Delivery_Technical", "Loc_Audio_Repurpose", "Loc_Audio_PU", "Loc_Audio_Volume_Boost", "Loc_Audio_Volume_Decrease", "Loc_Audio_Redelivery"]
     if(isRexPreproSelected()) {
         const rex_prepro_excluded_labels = ["Loc_Prod", "Loc_Global", "Loc_SP", "Loc_MP", "Loc_WZ", "Loc_DMZ"]
         jira_label_list = jira_label_list.filter(label => !rex_prepro_excluded_labels.includes(label))
     }
+    if(isRexAudioOrPreproSelected()) {
+        getRexExpectedFixAudioLabels().forEach(label => {
+            if(!jira_label_list.includes(label)) jira_label_list.push(label)
+        })
+    }else{
+        jira_label_list = jira_label_list.filter(label => !rex_audio_expected_fix_label_set.includes(label))
+    }
+    if(PROJECT == "REX") {
+        const rex_label_excluded_prefixes = ["Loc_Text", "Loc_Subtitle"]
+        jira_label_list = jira_label_list.filter(label => !rex_label_excluded_prefixes.some(prefix => label == prefix || label.startsWith(prefix + "_")))
+    }
+    jira_label_list = [...new Set(jira_label_list)]
     let label_query = "&labels=Loc&labels=Loc_" + project_fullname[PROJECT] + (PROJECT == "REX" && !isRexPreproSelected() ? "&labels=Loc_Prod" : "") + jira_label_list.map(label => "&labels=" + label).join("")
     let lng_selected = $('.add_lng.selected')
     let LNG = lng_selected.map(function() {return $(this).text()}).get().join("/")
@@ -1147,7 +1236,27 @@ if(label_select_val) {
     }else if(lng_selected[0].id == "lng_ALL") {
         LNG = "EFIGS/RU/PL/AR/ENAR/PTBR/MX/KO/JA/ZHS/ZHT"
     }
-    let atvi_type_query = jira_labels.includes("Audio") ? "&customfield_10364=11338" : "&customfield_10364=11351"
+let atvi_type_query = "&customfield_10364=11351" // Text
+
+if(PROJECT == "REX") {
+    if($("#Loc_Audio").hasClass("selected") || $("#Loc_Audio_PP").hasClass("selected")) {
+        atvi_type_query = "&customfield_10364=11338" // Audio
+    }
+    else if($("#Loc_Art").hasClass("selected")) {
+        atvi_type_query = "&customfield_10364=11337" // Art
+    }
+    else if($("#Loc_UI").hasClass("selected")) {
+        atvi_type_query = "&customfield_10364=28439" // Menu/UI
+    }
+    else if(jira_labels.includes("Loc_Functional")) {
+        atvi_type_query = "&customfield_10364=11344" // Functionality
+    }
+}
+else {
+    atvi_type_query = jira_labels.includes("Audio")
+        ? "&customfield_10364=11338"
+        : "&customfield_10364=11351"
+}
     let atvi_type = {
         "Loc_Text_Overlap": "11352", "Loc_Text_Truncation": "11353", "Loc_Text_Missing": "11354", "Loc_Text_Context": "11355",
         "Loc_Text_Graphic": "28445", "Loc_Text_Not_Translated": "28441", "Loc_Audio_Missing": "11356", "Loc_Audio_Context": "11357",
@@ -1187,7 +1296,7 @@ if(label_select_val) {
         "Loc_Arabic_Safe": "11434", "Loc_Audio_Consistency": "11425", "Loc_Audio_Context": "11424", "Loc_Audio_Cut": "11426",
         "Loc_Audio_Context": "16201", "Loc_Audio_Consistency": "16201", "Loc_Audio_Text_Integration": "11431", "Loc_Audio_Missing": "11422",
         "Loc_Audio_Delivery_Technical": "16202", "Loc_Audio_Delivery_Consistency": "16201", "Loc_Audio_Delivery_Context": "16201",
-        "Loc_Audio_Text_Mismatch": "11421", "Loc_Audio_Delivery_Acting": "16200", "Loc_Audio_Not_Translated": "11423", "Loc_Audio_Overlap": "11427", 
+        "Loc_Audio_Text_Mismatch": "11421", "Loc_Audio_Delivery_Acting": "16200", "Loc_Audio_Multiple": "16203", "Loc_Audio_Not_Translated": "11423", "Loc_Audio_Overlap": "11427", 
         "Loc_Audio_SFX": "11429", "Loc_Audio_Sync": "11428", "Loc_Audio_Volume": "11430", "Loc_Subtitle_Amendment": "26069", "Loc_Subtitle_Consistency": "26068", 
         "Loc_Subtitle_Context": "26067", "Loc_Subtitle_Integration": "28701", "Loc_Subtitle_Mismatch": "11421", "Loc_Subtitle_Missing": "30501", 
         "Loc_Subtitle_Not_Translated": "30500", "Loc_Subtitle_Spelling_Grammar": "26070", "Loc_Text_Alignment": "11419", "Loc_Text_Amendment": "11415", 
@@ -1218,13 +1327,15 @@ if(label_select_val) {
     let summary_detail = $("#summary").val()
     let issue_type_1 = $(".issue_type_1.selected").text().toUpperCase()
     let issue_type_2 = $(".issue_type_2.selected").text().replace("_", "/").toUpperCase()
+    let rex_ui_issue_type_2 = PROJECT == "REX" && $("#Loc_UI").hasClass("selected") ?
+        $(".specific_label:visible .issue_type_2.selected").not(".prepro_specific .issue_type_2").first().text().replace("_", "/").toUpperCase() : ""
     
     if (issue_type_1 == "PREPRO" || (PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected"))) issue_type_1 = "AUDIO" // Prepro的issue_type_1是AUDIO
     if(PROJECT == "REX" && $("#Loc_Art").hasClass("selected")) {
         issue_type_1 = "ART"
         issue_type_2 = ""
     }else if(PROJECT == "REX" && $("#Loc_UI").hasClass("selected")) {
-        issue_type_1 = "UI"
+        issue_type_1 = rex_ui_issue_type_2 != "" ? rex_ui_issue_type_2 : "UI"
         issue_type_2 = ""
     }
     let high_priority_type_2 = ["Loc_Arabic_Safe", "Loc_Arabic_Technical", "Loc_German_Safe", "Loc_Japanese_Safe", "Loc_Korean_Safe", "Loc_Chinese_Safe"]
@@ -1236,10 +1347,11 @@ if(label_select_val) {
     let suffix = ""
     if(PROJECT != "REX" && jira_labels.includes("TRG")) {suffix = " [TRG]"}
     else if(jira_labels.includes("Telescope")) {suffix = " [Telescope]"}
-    const rex_summary_suffix = $(".loc_expected_fix_issue.selected, .prepro_specific .issue_type_2.selected").data("summary-suffix")
-    if(PROJECT == "REX" && rex_summary_suffix) {suffix += " " + rex_summary_suffix}
+    const $rex_summary_suffix_selected = $(".loc_expected_fix_issue.selected").length ? $(".loc_expected_fix_issue.selected") : $(".prepro_specific .issue_type_2.selected")
+    const rex_summary_suffix = $rex_summary_suffix_selected.data("summary-suffix")
+    if(isRexAudioOrPreproSelected() && rex_summary_suffix) {suffix += " " + rex_summary_suffix}
     const linebook = {
-        "REX": "COD Linebooks | Rex",
+        "REX": "COD Trunk | Rex",
         "CHI": "COD 2025 Linebooks | Chimera"
     }
     let summary_location_part = (PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected")) ? location : area + "/" + location
@@ -1266,20 +1378,30 @@ if(label_select_val) {
         found_cl = branch_found_cl[0]
     }
 
+    const resource_id_list = getResourceIdList()
+    const loc_affected_files_count = resource_id_list.length
+    const resource_file_label = "(" + loc_affected_files_count + (loc_affected_files_count == 1 ? " file)" : " files)")
+    const resource_id_text = resource_id_list.length > 0 ? resource_id_list.join("\n") : "N/A"
+    const is_rex_external_review = PROJECT == "REX" && $("#platform_external_review").hasClass("selected")
+    const build_number_section = is_rex_external_review ? "" : ((PROJECT == "REX" && found_cl == "") ? "" : "Build number: *" + found_cl + "*\n\n")
+    if(is_rex_external_review) {
+        repro_step = getExternalReviewReproStep()
+    }
     let description =
-    "Build number: *" + found_cl + "*\n\n" +
+    build_number_section +
     "*REPRO STEPS*\n" +
     "----\n" +
     repro_step + "\n\n" +
     "*BUG OBSERVED*\n" +
     "----\n" +
     summary_detail + ".\n" + bug_observed + "\n\n" +
-    "Please check the screenshot attached for further details.\n\n" +
+    (PROJECT == "REX" ? "Please check the attachment for further details.\n\n" : "Please check the screenshot attached for further details.\n\n") +
     "*ACTION REQUIRED*\n" +
     "----\n" +
     action_required + " Thanks!\n\n" +
     "*RESOURCE ID*\n" +
-    "----\n " + (resource_ids!= "" ? "resource_ids" : "N/A") + " \n\n" +
+    "----\n" +
+    (resource_id_list.length > 0 ? (isRexAudioOrPreproSelected() ? resource_file_label + "\n" + resource_id_text : resource_id_text) : "N/A") + " \n\n" +
     "keywords: " + keywords
 
 const query_string = {
@@ -1287,8 +1409,8 @@ const query_string = {
         "&customfield_10325=43600" + platform_query + "&customfield_10900=12800&reporter=" + username + "&customfield_10362=37144" +
         "&summary=" + encodeURIComponent(summary) +
         "&description=" + encodeURIComponent(description) +
-        "&assignee=" + username + "&customfield_10307=" + found_cl + "&customfield_10604=" + branch + priority_query +
-        label_query + level_query + "&reporter=" + username + atvi_type_query + loc_lng_query + loc_type_query + getRexLocExpectedFixQuery() + component_query + getRexFixVersionQuery(),
+        "&assignee=" + username + (is_rex_external_review ? "" : "&customfield_10307=" + found_cl) + "&customfield_10604=" + branch + priority_query +
+        label_query + level_query + "&reporter=" + username + atvi_type_query + loc_lng_query + loc_type_query + getRexLocExpectedFixQuery() + component_query + getRexFixVersionQuery() + getLocAffectedFilesQuery(),
 
     "CHI": "https://dev.activision.com/jira/secure/CreateIssueDetails!init.jspa?issuetype=10203&pid=13700" +
         "&customfield_10325=43600" + platform_query + "&customfield_10900=12800&reporter=" + username + "&customfield_10362=37144" +
@@ -1574,9 +1696,10 @@ function updateFileName() {
         );
     } else {
         $("#file_name").val(
-            (bugId + "_" + lng + "_" + type1 + "_" + type2.replace("/", "_") + "_" + rid)
+            (bugId + "_" + lng + "_" + type1 + "_" + type2.replace("/", "_") + (rid ? "_" + rid : ""))
                 .replace("__", "_")
                 .replaceAll(" ", "_")
+                .replace(/_+$/g, "")
                 .trim()
         );
     }
@@ -1851,80 +1974,64 @@ function resizeXlocTabLength() {
         $("#xloc.tabcontent").height(TEXTCONTENT_MAX_HEIGHT - tabContentPaddingY)
     }
 }
-// 從localstorage讀color code string資料
+// 從localstorage讀Audio ID資料
 chrome.storage.local.get("color_code_string").then((result) => {
     if(result["color_code_string"] != undefined && result["color_code_string"] != ""){
         $("#color_code_string").val(result["color_code_string"])
-        // 把textarea展開
         $("#color_code_string").css("height", "1px") // textarea和input的預設大小是20px 看起來比較一致
         $("#color_code_string").css("height", ($("#color_code_string").prop('scrollHeight')) == 20 ? "93px" : ($("#color_code_string").prop('scrollHeight')) + 2 + "px") // 多+2是因為有padding
-        chrome.storage.local.get("style_dict").then((result) => {
-            style_dict = result["style_dict"]
-            style_codes = Object.keys(style_dict)
-            chrome.storage.local.get("emoji_dict").then((result) => {
-                emoji_dict = result["emoji_dict"]
-                emoji_codes = Object.keys(emoji_dict)
-                convert_to_colored_string()
-                resizeXlocTabLength()
-            })
-        })
+        convert_to_audio_dvar()
+        resizeXlocTabLength()
     }
 })
-// 當color code string有修改時 上傳localstorage
+// 當Audio ID有修改時 上傳localstorage
 $("#color_code_string").change(() => {
     chrome.storage.local.set({"color_code_string": $("#color_code_string").val()})
 })
-// color code字串輸入監聽
+// Audio ID輸入監聽
 $("#color_code_string").on("input", function() {
-    convert_to_colored_string()
-    // 如果color code string輸入使內容大於tabcontent的高度，則自動調整tabcontent的高度
+    convert_to_audio_dvar()
     resizeXlocTabLength()
 })
-// color code淺色背景
-$("#light-background").on("click", function(){
-    $("#colored_string").css("background-color", "#fff")
-})
-$("#dark-background").on("click", function(){
-    $("#colored_string").css("background-color", "#333333")
-})
-// 將符合的字元轉成跳脫字元
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-}
-// 將color code轉成顏色
-function convert_to_colored_string() {
-    let color_code_string = $("#color_code_string").val()
-    
-    // 把style code逐一檢查
-    let style_regex = style_codes.map(code => escapeRegExp(code)).join("|")
-    let buffer = [], release_buffer = false
-    color_code_string.replace(new RegExp(style_regex, "g"), (element) => {
-        let replace_element = style_dict[element]
-        if(release_buffer) {
-            while(buffer.length > 0){
-                replace_element = buffer.pop() + replace_element
-            }
-            release_buffer = false
-        }
-        // 當下一個抓到的不是token的話
-        if(color_code_string.charAt(color_code_string.search(new RegExp(escapeRegExp(element))) + element.length) != "^"){
-            release_buffer = true
-        }
-        buffer.push("</span>")
-        color_code_string = color_code_string.replace(element, replace_element)
-    })    
-    while(buffer.length > 0){// 把最後少加的</span>加回去
-        color_code_string = color_code_string + buffer.pop()
+function generateAudioDvarFromId(audio_id) {
+    let filename = (audio_id || "").trim()
+    if(filename == "") return ""
+    filename = filename.replace(/^snd_start_alias\s+/i, "").replace(/\.wav$/i, "")
+    if(/^subtitle_rex_/i.test(filename) && filename.includes(".ste_")) {
+        return "snd_start_alias " + filename.split(".ste_").pop().replace(/_[0-9]+$/g, "").toLowerCase()
     }
-    // emoji code逐一檢查
-    emoji_codes.map(function(element) {
-        if(color_code_string.includes(element)) {
-            color_code_string = color_code_string.replaceAll(element, emoji_dict[element])
-        }
-    })
-    $("#colored_string").empty()
-    $("#colored_string").append(color_code_string)
+    const postfix_regex = /_[0-9]{2}/g
+    let parts = filename.split("_")
+    if(filename.includes("dx_br")){
+        return "snd_start_alias " + parts.slice(0, 6).join("_")
+    } else if(filename.includes("dx_mp") && parts.length >= 6) {
+        return "snd_start_alias " + parts[0] + "_" + parts[1] + "_" + parts[2] + "_" + parts[3] + "_" + parts[5] + "_" + parts[4]
+    } else if(filename.includes("dx_sp")) {
+        return "snd_start_alias " + filename.replace(postfix_regex, "").replace(/otherside/ig, "otherlane")
+    } else if(filename.includes("dx_zm")) {
+        return "snd_start_alias " + filename.replace(postfix_regex, "")
+    } else if(filename.includes("dx_wc")) {
+        return "snd_start_alias " + parts.slice(0, 6).join("_")
+    } else if(parts.length >= 6) {
+        return "snd_start_alias " + parts[0] + "_" + parts[1] + "_" + parts[3] + "_" + parts[5] + "_" + parts[4]
+    }
+    return "snd_start_alias " + filename
 }
+// 將Audio ID轉成Dvar
+function convert_to_audio_dvar() {
+    let audio_id_string = $("#color_code_string").val()
+    let dvar = audio_id_string.split(/\r?\n/).map(line => generateAudioDvarFromId(line)).filter(line => line != "").join("\n")
+    $("#colored_string").val(dvar)
+}
+// 按下Audio Dvar複製
+$("#audio_dvar_copy").on("click", async () => {
+    navigator.clipboard.writeText($("#colored_string").val()).then(async () => {
+        $("#audio_dvar_copy").removeClass("fa-copy").addClass("fa-check")
+        await new Promise(r => setTimeout(r, 1000))
+        $("#audio_dvar_copy").removeClass("fa-check").addClass("fa-copy")
+    })
+})
+
 // 檢查目前是否有強調(highlight) 有的話對應的按鈕要變色
 chrome.runtime.sendMessage({type: "detect_highlight", value: true}).then((result) => {
     Object.keys(result).forEach((key) => {

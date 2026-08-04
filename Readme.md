@@ -1,30 +1,8 @@
 >[!IMPORTANT]
+>
+>**We are currently in Beta Test**
 
 Copyright&copy; 2024, Ivy Ho
-# 2026-08-04 by Jinghong
-1. Updated dx_sp audio Dvar support in Xloc Audio Dvar Create.
-2. Fixed REX prepro bugs, Found CL is now shown only in the Repro Steps CL field.
-3. Removed unnecessary REX Jira Labels.
-# 2026-07-29 by Jinghong
-1. Switch is now displayed as Switch 2 in the Summary.
-2. CL is now automatically populated for Prepro bugs.
-3. Added REX Devmap and Devmode Dvar.
-4. Several minor bugs have been fixed.
-# 2026-07-24 by Jinghong
-1. Added a Call All Dvars button to Xloc → Call of Duty - Trunk.
-2. Added new Dvar generation logic.
-3. Fixed the download icon.
-4. Updated the ACTION REQUIRED content for REX bugs.
-# 2026-07-22 by Jinghong
-1. Added REX project support and project-specific optimizations.
-2. Improved Found CL detection from Jira Description.
-3. Added Ship+Beta Milestone option (maps to REX_PublicBeta Fix Version).
-4. Updated Platform options and behavior per latest REX requirements.
-5. Improved Template page layout and field alignment.
-6. Set AUDIO as the default Summary bug type for Prepro bugs.
-7. Added Loc Expected Fix options for Prepro bugs.
-8. Automated audio labels and Summary suffixes based on Loc Expected Fix selection.
-9. Removed unnecessary Prepro labels to streamline the REX workflow.
 # 2026-05-16 by Jinghong
 1. Added new project REX and removed Cerberus.
 2. Updated platform availability for REX (PS4 and Xbox One are no longer shown in UI).

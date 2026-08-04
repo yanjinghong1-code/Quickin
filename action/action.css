@@ -31,18 +31,15 @@
 *:focus {
     outline: none;
 }
-
 body {
     width: 320px;
     margin: 0;
 }
-
 /* html */
 html {
     color: var(--general-text-color);
     background-color: var(--general-background-color);
 }
-
 /* div */
 div.bind {
     display: block;
@@ -87,7 +84,6 @@ div#mask {
     background-color: rgba(248, 248, 255, .9);
     z-index: 999;
 }
-
 /* textarea */
 textarea {
     width: 100%;
@@ -99,7 +95,6 @@ textarea {
 textarea:not(#summary):not(#keywords) {
     min-height: 93px;
 }
-
 /* p */
 p {
     margin: auto;
@@ -112,7 +107,6 @@ p#version {
     font-size: .7rem;
     margin: auto 0;
 }
-
 /* a */
 a#check_username, a#report {
     font-size: .7rem;
@@ -120,7 +114,6 @@ a#check_username, a#report {
     margin: auto 0;
     color: var(--general-text-color);
 }
-
 /* input, select */
 input,select {
     border: 1.5px solid;
@@ -155,12 +148,10 @@ input[type="checkbox"]:checked:after {
     content: "";
     background-color: var(--checkbox-fill-color);
 }
-
 /* list */
-ol { 
-    padding-left: 1.8em; 
+ol {
+    padding-left: 1.8em;
 }
-
 /* button */
 button {
     border-radius: 4px;
@@ -181,12 +172,10 @@ button.selected:hover {
     color: var(--general-button-selected-color);
     background-color: var(--general-button-selected-background-color);
 }
-
 /* ===== Disabled rules (FIXED) =====
-   1) 只对真正的 HTML disabled 生效（禁用点击）
-   2) .disabled 只负责“变灰外观”，不再通杀禁用点击
-   3) 真正要禁用点击的，只给 comment 用：.comment.disabled
-*/
+1) 只对真正的 HTML disabled 生效（禁用点击）
+2) .disabled 只负责“变灰外观”，不再通杀禁用点击
+3) 真正要禁用点击的，只给 comment 用：.comment.disabled */
 button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
@@ -208,7 +197,6 @@ button.disabled:hover {
     background-color: var(--general-button-background-color);
     color: var(--general-button-color);
 }
-
 /* icon */
 i#setting {
     font-size: 1.2rem;
@@ -218,7 +206,8 @@ i#setting {
     line-height: 0;
     margin-left: 5px;
     /* vertically center the icon */
-    top: 50%; transform: translateY(-50%);
+    top: 50%;
+    transform: translateY(-50%);
 }
 i#resize {
     font-size: 1.2rem;
@@ -259,7 +248,6 @@ i#dvar_switcher {
     margin: auto;
     cursor: pointer;
 }
-
 /* img */
 img.logo {
     width: 15%;
@@ -270,22 +258,18 @@ img.logo {
     top: 50%;
     transform: translateY(-50%);
 }
-
 /* label */
 label {
     color: var(--decorate-text-color);
 }
-
 /* span */
 span {
     color: var(--decorate-text-color);
 }
-
 /* SVG */
 svg {
     margin: 0;
 }
-
 /* footer */
 footer {
     display: flex;
@@ -294,11 +278,9 @@ footer {
     margin: 7px;
     height: 30px;
 }
-
 footer #new_bug_action_button > button {
     padding: 2px 4.5px;
 }
-
 /* tab */
 div.tab {
     background-color: var(--tab-background-color);
@@ -346,7 +328,6 @@ div.tab {
         border-radius: 3px;
     }
 }
-
 /* each tab content related */
 #ftue {
     display: block;
@@ -386,7 +367,7 @@ div.tab {
 }
 #ftue p#version {
     position: absolute;
-    bottom: 3px;
+    bottom: -2px;
     left: 50%;
     transform: translateX(-50%);
 }
@@ -407,7 +388,6 @@ div.tab {
 #file_naming button {
     padding: 2px 5.5px;
 }
-
 #xloc > textarea#color_code_string {
     height: 51px;
     min-height: 51px;
@@ -432,7 +412,6 @@ div.tab {
     margin: 5px auto;
     padding: 4px 10px;
 }
-
 /* Setting Window */
 #setting_window {
     position: absolute;
@@ -445,11 +424,10 @@ div.tab {
     border: 1.5px solid #606060;
     padding: 12.5px;
 }
-
 /* tooltips */
 .tooltip {
     position: relative;
-} 
+}
 .tooltip .tooltiptext {
     visibility: hidden;
     width: 120px;
@@ -480,7 +458,6 @@ div.tab {
 .tooltip.format-error #profile_username {
     border: 1px solid red;
 }
-
 /* shadow clone */
 #shadow {
     visibility: hidden;
@@ -500,7 +477,6 @@ div.tab {
     gap: 10px;
     flex-wrap: nowrap;
 }
-
 /* 添加这一条规则：让 Name file 按钮向右撑开空间 */
 #file_naming .file_naming_button button#mode_namefile {
     margin-right: auto;

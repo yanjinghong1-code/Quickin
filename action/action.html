@@ -338,8 +338,8 @@
             <button id="compare_source" title="Compare current and previous source">&nbsp;&nbsp;&nbsp;Compare source&nbsp;&nbsp;&nbsp;</button>
             <button id="compare_translation" title="Compare current and previous translation">Compare translation</button>
             <button id="highlight_color_code" title="Highlilght the corresponding color on color code">Highlight color code</button><br>
-            <p style="text-align: center; margin-bottom: 6px;">Color code string preview</p>
-            <textarea id="color_code_string" placeholder="Paste the color code string here!" rows="3" title="Convert the string with color code into colored text"></textarea>
+            <p style="text-align: center; margin-bottom: 6px;">Audio Dvar Create</p>
+            <textarea id="color_code_string" placeholder="Paste Audio ID here!" rows="3" title="Convert Audio ID into Dvar"></textarea>
             <!-- Shadow Clone -->
             <div id="shadow"></div>
             <p style="text-align: center; margin: 5px auto;">
@@ -347,10 +347,9 @@
                     <polygon points="25, 0, 75, 0, 50, 12.5" fill="#CFCFCF" />
                 </svg>
             </p>
-            <p id="colored_string"></p>
-            <div class="bg-switch" style="text-align: right;">
-                <i class="fa-regular fa-circle" id="light-background" style="cursor: pointer;"></i>
-                <i class="fa-solid fa-circle" id="dark-background" style="cursor: pointer;"></i>
+            <div class="copy_audio_dvar" style="position: relative;">
+                <textarea id="colored_string" rows="3" style="word-break: break-all;" readonly></textarea>
+                <i id="audio_dvar_copy" class="fa-solid fa-copy" title="Copy"></i>
             </div>
         </div>
 
