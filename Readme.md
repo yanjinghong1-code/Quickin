@@ -2,14 +2,11 @@
 
 Copyright&copy; 2024, Ivy Ho
 # 2026-08-10 by Jinghong
-#New Features
 1. Added a Copy Loc Comment button in Linebooks 2026, allowing users to quickly copy localization comments and search the corresponding content in Trunk.
 2. Added Switch regression comments to streamline regression bug reporting for the Switch platform.
-#Improvements
-1. Simplified Milestone selection by removing Ship + Beta. Selecting Beta now automatically adds REX_PublicBeta to Fix Version/s.
-2. Improved bug summary generation when UI is selected as the Bug Type, making summaries clearer and more consistent.
-#Bug Fixes
-Fixed an issue where the Name File field was not displayed correctly for Switch bugs.
+3. Simplified Milestone selection by removing Ship + Beta. Selecting Beta now automatically adds REX_PublicBeta to Fix Version/s.
+4. Improved bug summary generation when UI is selected as the Bug Type, making summaries clearer and more consistent.
+5. Fixed an issue where the Name File field was not displayed correctly for Switch bugs.
 # 2026-08-04 by Jinghong
 1. Updated dx_sp audio Dvar support in Xloc Audio Dvar Create.
 2. Fixed REX prepro bugs, Found CL is now shown only in the Repro Steps CL field.
