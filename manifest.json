@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Kakin",
-    "version": "2.4.3",
+    "version": "2.4.4",
     "description": "Helps you log/regress bugs faster, quickly get the Dvars you need, and improve your work efficiency.",
     "permissions": [
         "contextMenus",
