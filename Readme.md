@@ -1,36 +1,13 @@
 >[!IMPORTANT]
+>
+>**We are currently in Beta Test**
 
 Copyright&copy; 2024, Ivy Ho
-# 2026-08-10 by Jinghong
-1. Added a Copy Loc Comment button in Linebooks 2026, allowing users to quickly copy localization comments and search the corresponding content in Trunk.
-2. Added Switch regression comments to streamline regression bug reporting for the Switch platform.
-3. Simplified Milestone selection by removing Ship + Beta. Selecting Beta now automatically adds REX_PublicBeta to Fix Version/s.
-4. Improved bug summary generation when UI is selected as the Bug Type, making summaries clearer and more consistent.
-5. Fixed an issue where the Name File field was not displayed correctly for Switch bugs.
-# 2026-08-04 by Jinghong
-1. Updated dx_sp audio Dvar support in Xloc Audio Dvar Create.
-2. Fixed REX prepro bugs, Found CL is now shown only in the Repro Steps CL field.
-3. Removed unnecessary REX Jira Labels.
-# 2026-07-29 by Jinghong
-1. Switch is now displayed as Switch 2 in the Summary.
-2. CL is now automatically populated for Prepro bugs.
-3. Added REX Devmap and Devmode Dvar.
-4. Several minor bugs have been fixed.
-# 2026-07-24 by Jinghong
-1. Added a Call All Dvars button to Xloc → Call of Duty - Trunk.
-2. Added new Dvar generation logic.
-3. Fixed the download icon.
-4. Updated the ACTION REQUIRED content for REX bugs.
-# 2026-07-22 by Jinghong
-1. Added REX project support and project-specific optimizations.
-2. Improved Found CL detection from Jira Description.
-3. Added Ship+Beta Milestone option (maps to REX_PublicBeta Fix Version).
-4. Updated Platform options and behavior per latest REX requirements.
-5. Improved Template page layout and field alignment.
-6. Set AUDIO as the default Summary bug type for Prepro bugs.
-7. Added Loc Expected Fix options for Prepro bugs.
-8. Automated audio labels and Summary suffixes based on Loc Expected Fix selection.
-9. Removed unnecessary Prepro labels to streamline the REX workflow.
+# 2026-08-17 by Jinghong
+1. Milestone is now mapped to its corresponding Fix Version/s.
+2. Improved the overall UI.
+3. Added theme customization.
+4. Improved the Repro step section in the Desc field of the Template tab: once edited, it will no longer be overwritten automatically until Reset is clicked.
 # 2026-05-16 by Jinghong
 1. Added new project REX and removed Cerberus.
 2. Updated platform availability for REX (PS4 and Xbox One are no longer shown in UI).

@@ -1,17 +1,17 @@
 {
-  ":root=>--general-background-color": "#F7FBFF",
-  ":root=>--general-text-color": "#223344",
-  ":root=>--tab-background-color": "#EAF6FF",
-  ":root=>--decorate-text-color": "#223344",
-  ":root=>--file-naming-label-color": "#8DA6C1",
+  ":root=>--general-background-color": "#F3F8FF",
+  ":root=>--general-text-color": "#1E3A5F",
+  ":root=>--tab-background-color": "#E4F0FF",
+  ":root=>--decorate-text-color": "#2563EB",
+  ":root=>--file-naming-label-color": "#7896B8",
 
-  ":root=>--general-button-color": "#223344",
-  ":root=>--general-button-selected-color": "#162433",
-  ":root=>--general-button-border-color": "#8EC7FF",
+  ":root=>--general-button-color": "#1E4D80",
+  ":root=>--general-button-selected-color": "#FFFFFF",
+  ":root=>--general-button-border-color": "#B7D5F7",
   ":root=>--general-button-background-color": "#FFFFFF",
-  ":root=>--general-button-selected-background-color": "#CFEAFF",
+  ":root=>--general-button-selected-background-color": "#3182CE",
 
-  ":root=>--tablinks-color": "#223344",
-  ":root=>--tablinks-selected-background-color": "#CFEAFF",
-  ":root=>--checkbox-fill-color": "#2F6FAE"
+  ":root=>--tablinks-color": "#285E9C",
+  ":root=>--tablinks-selected-background-color": "#D5E9FF",
+  ":root=>--checkbox-fill-color": "#3182CE"
 }

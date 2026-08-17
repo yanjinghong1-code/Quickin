@@ -23,6 +23,14 @@ const API_KEY = "AIzaSyDjuspXXuiZs6NeNTW04D_hj5x-fNv0mGE"
 const GOOGLE_SHEET_NAMES = ["Version", "Quick", "MP_Map", "MP_Mode", "ZM_Map", "ZM_Mode", "WZ_Map", "WZ_Mode"]
 let GOOGLE_WORKBOOK = null // Singleton
 
+let toastTimer
+function showToast(message) {
+    const $toast = $("#toast")
+    $toast.text(message).addClass("visible")
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => $toast.removeClass("visible"), 1800)
+}
+
 // text area自動調整大小
 textareaPaddingY = parseFloat($("textarea").css('padding-top')) + parseFloat($("textarea").css('padding-bottom'))
 $('textarea').on('input', (event) => {
@@ -137,6 +145,13 @@ function openTab(tabName) {
     // Show the current tab, and add an "selected" class to the button that opened the tab
     document.getElementById(tabName).style.display = "block";
     $("#" + tabName + "_tab").addClass("selected")
+    const workspaceTitles = {
+        new_bug: "Bug template",
+        file_naming: "File naming",
+        xloc: "XLOC tools",
+        dvar: "Dvar launcher"
+    }
+    $("#workspace_title").text(workspaceTitles[tabName] || "Workspace")
     // 如果打開的頁面不是New Bug tab時 無法取得#resource_ids的滾動高度(因為display:none;) 所以每切換一次就讀一次
     $("#resource_ids").css("height", "1px") // textarea和input的預設大小是20px 看起來比較一致
     $("#resource_ids").css("height", ($("#resource_ids").prop('scrollHeight')) == 20 ? "93px" : ($("#resource_ids").prop('scrollHeight')) + 2 + "px") // 多+2是因為有padding
@@ -241,23 +256,103 @@ chrome.storage.local.get("profile_lng").then((result) => {
 $("#profile_lng").change(() => {
     chrome.storage.local.set({"profile_lng": $("#profile_lng option:selected").attr("id")})
 })
+const CUSTOM_THEME_DEFAULTS = {
+    background: "#F7F8FC",
+    text: "#1F2937",
+    accent: "#5B5CE2",
+    button: "#FFFFFF",
+    border: "#D9DDEA"
+}
+
+function contrastColor(hex) {
+    const value = (hex || "").replace("#", "")
+    if (value.length !== 6) return "#FFFFFF"
+    const [r, g, b] = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16))
+    return (r * 299 + g * 587 + b * 114) / 1000 > 155 ? "#111827" : "#FFFFFF"
+}
+
+function mixHex(from, to, amount) {
+    const parse = hex => [0, 2, 4].map(index => parseInt(hex.replace("#", "").slice(index, index + 2), 16))
+    const [r1, g1, b1] = parse(from), [r2, g2, b2] = parse(to)
+    const blend = (first, second) => Math.round(first + (second - first) * amount).toString(16).padStart(2, "0")
+    return "#" + blend(r1, r2) + blend(g1, g2) + blend(b1, b2)
+}
+
+function setThemeVariables(variables) {
+    Object.entries(variables).forEach(([name, value]) => $(":root").css(name, value))
+}
+
+function getCustomThemeColors() {
+    const colors = { ...CUSTOM_THEME_DEFAULTS }
+    $("[data-custom-color]").each(function() { colors[$(this).data("custom-color")] = $(this).val() })
+    return colors
+}
+
+function syncCustomThemeInputs(colors) {
+    $("[data-custom-color]").each(function() {
+        const key = $(this).data("custom-color")
+        $(this).val(colors[key] || CUSTOM_THEME_DEFAULTS[key])
+    })
+}
+
+function applyCustomTheme(colors) {
+    const palette = { ...CUSTOM_THEME_DEFAULTS, ...colors }
+    const accentSoft = mixHex(palette.background, palette.accent, 0.14)
+    setThemeVariables({
+        "--general-background-color": palette.background,
+        "--general-text-color": palette.text,
+        "--tab-background-color": mixHex(palette.background, palette.text, 0.05),
+        "--decorate-text-color": palette.accent,
+        "--file-naming-label-color": mixHex(palette.background, palette.text, 0.5),
+        "--general-button-color": palette.text,
+        "--general-button-selected-color": contrastColor(palette.accent),
+        "--general-button-border-color": palette.border,
+        "--general-button-background-color": palette.button,
+        "--general-button-selected-background-color": palette.accent,
+        "--tablinks-color": palette.text,
+        "--tablinks-selected-background-color": accentSoft,
+        "--checkbox-fill-color": palette.accent
+    })
+    $(".logo").hide()
+}
+
 // 從localstorage讀theme資料
-chrome.storage.local.get("theme").then((result) => {
+chrome.storage.local.get(["theme", "custom_theme"]).then((result) => {
     $(".theme_btn").removeClass('selected')
-    if(result["theme"] != null){
-        $("#theme_" + result["theme"]).addClass('selected')
+    const theme = result["theme"] || "default"
+    if(theme == "custom") {
+        syncCustomThemeInputs({ ...CUSTOM_THEME_DEFAULTS, ...(result["custom_theme"] || {}) })
+        $("#custom_theme_controls").prop("hidden", false)
+        $("#theme_custom").addClass('selected')
+        applyCustomTheme(result["custom_theme"] || {})
     }else{
-        $("#theme_default").addClass('selected')
+        $("#theme_" + theme).addClass('selected')
+        applyTheme(theme)
     }
-    // 初始化布景主題
-    applyTheme($(".theme_btn.selected").data("value"))
 })
 // 當profile lng有修改時 上傳localstorage並布景主題切換
 $(".theme_btn").on("click", function() {
     $(".theme_btn").removeClass('selected')
     $(this).addClass('selected')
-    chrome.storage.local.set({"theme": $(this).data("value")})
-    applyTheme($(this).data("value"))
+    const theme = $(this).data("value")
+    chrome.storage.local.set({"theme": theme})
+    if(theme == "custom") {
+        $("#custom_theme_controls").prop("hidden", false)
+        const colors = getCustomThemeColors()
+        chrome.storage.local.set({ "custom_theme": colors })
+        applyCustomTheme(colors)
+    }else {
+        $("#custom_theme_controls").prop("hidden", true)
+        applyTheme(theme)
+    }
+})
+$("[data-custom-color]").on("input", function() {
+    const colors = getCustomThemeColors()
+    $(".theme_btn").removeClass('selected')
+    $("#theme_custom").addClass('selected')
+    $("#custom_theme_controls").prop("hidden", false)
+    chrome.storage.local.set({ theme: "custom", custom_theme: colors })
+    applyCustomTheme(colors)
 })
 // 開啟jira profile頁
 $("#check_username").on("click", function() {
@@ -311,7 +406,7 @@ function applyTheme(theme) {
         .then(data => {
             if (!data) return;
 
-            for (key in data) {
+            for (const key in data) {
                 let tag = key.split("=>")[0];
                 let style_name = key.split("=>")[1];
                 let style = data[key];
@@ -362,6 +457,8 @@ function syncRexBugTypeUI() {
         $("#Loc_Audio_PP").removeClass("issue_type_1")
         $("#Loc_Audio_PP").insertBefore($("#Loc_Glossary"))
         $("#Loc_Art").insertBefore($("#Loc_UI"))
+        // UI issues in REX use the same second-level choices as Text issues.
+        $("#Loc_UI").addClass("advanced_type")
     }else{
         if(rexBugTypeLayout.preproOriginalNext && rexBugTypeLayout.preproOriginalNext.length) {
             $("#Loc_Audio_PP").insertBefore(rexBugTypeLayout.preproOriginalNext)
@@ -375,6 +472,7 @@ function syncRexBugTypeUI() {
         $("#Loc_Audio_PP").addClass("issue_type_1")
         $("#Loc_Art").hide().removeClass("selected")
         $("#Loc_TRG").show()
+        $("#Loc_UI").removeClass("advanced_type")
     }
 }
 
@@ -402,7 +500,11 @@ function getSelectedPlatformElements() {
 }
 function getSelectedPlatformText() {
     if(PROJECT == "REX" && $("#platform_external_review").hasClass("selected")) return "EXTERNAL REVIEW"
-    return getSelectedPlatformElements().map(function() {return $(this).text()}).get().join("/")
+    return getSelectedPlatformElements().map(function() {
+        // Keep the compact button label, while using the required REX platform
+        // wording in repro steps and generated Jira data.
+        return this.id == "platform_switch" ? "SWITCH 2" : $(this).text()
+    }).get().join("/")
 }
 function getJiraPlatformText() {
     if(PROJECT == "REX" && $("#platform_external_review").hasClass("selected")) return "All"
@@ -413,6 +515,28 @@ function getSelectedPlatformIds() {
 }
 function saveSelectedPlatforms() {
     chrome.storage.local.set({"platform": getSelectedPlatformIds()})
+}
+// Repro step 一旦被使用者手動編輯過, 就完全交給使用者自由修改
+// 任何自動產生/自動更新的邏輯都不再覆蓋 (切換分頁/專案/平台/語言都不會還原)
+let reproStepManual = true
+let reproStepAutoUpdating = false
+const reproStepManualReady = chrome.storage.local.get("repro_step_manual").then((result) => {
+    reproStepManual = result["repro_step_manual"] === true
+    if(!reproStepManual) {
+        syncReproStepDefaultByPlatform()
+        syncReproStepPlatformOnly()
+    }
+})
+function markReproStepManual() {
+    reproStepManual = true
+    chrome.storage.local.set({
+        "repro_step_manual": true,
+        "repro_step": $("#repro_step").val()
+    })
+}
+function clearReproStepManual() {
+    reproStepManual = false
+    chrome.storage.local.set({"repro_step_manual": false})
 }
 function getDefaultReproStep() {
     return "1) Boot up " + PROJECT + " in " + $(".add_lng.selected").text() + " on " + getSelectedPlatformText() + "\n2)\n3) Observe the issue"
@@ -425,6 +549,7 @@ function isAutoReproStep(text) {
            /^This issue has been spotted during the external audio review\.\nCL:.*\nOperator: ?.*$/.test(text || "")
 }
 function syncReproStepDefaultByPlatform(force = false) {
+    if(reproStepManual) return
     const current = $("#repro_step").val() || ""
     if(!force && current != "" && !isAutoReproStep(current)) return
     const next = (PROJECT == "REX" && $("#platform_external_review").hasClass("selected")) ? getExternalReviewReproStep() : getDefaultReproStep()
@@ -432,11 +557,20 @@ function syncReproStepDefaultByPlatform(force = false) {
     chrome.storage.local.set({"repro_step": next})
 }
 function syncReproStepPlatformOnly() {
+    if(reproStepManual) return
     let lines = ($("#repro_step").val() || "").split("\n")
     if(lines.length > 0 && lines[0].includes(" on ")) {
-        lines[0] = lines[0].replace(/ on .*/, " on " + getSelectedPlatformText())
-        $("#repro_step").val(lines.join("\n"))
-        chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+        const nextFirstLine = lines[0].replace(/ on .*/, " on " + getSelectedPlatformText())
+        if(nextFirstLine != lines[0]) {
+            lines[0] = nextFirstLine
+            const next = lines.join("\n")
+            // Update the visible Desc field immediately, including its
+            // auto-resized layout, whenever the platform changes.
+            reproStepAutoUpdating = true
+            $("#repro_step").val(next).trigger("input")
+            reproStepAutoUpdating = false
+            chrome.storage.local.set({"repro_step": next})
+        }
     }
 }
 function isRexPreproSelected() {
@@ -550,14 +684,16 @@ function updateGameMode(persistPlatform = false) {
             $("#Loc_COOP").addClass("selected")
         }
     }
-    $("#repro_step").val($("#repro_step").val().replace(/CHI|CER|REX/, PROJECT))
+    if(!reproStepManual) {
+        $("#repro_step").val($("#repro_step").val().replace(/CHI|CER|REX/, PROJECT))
+    }
     if(persistPlatform) saveSelectedPlatforms()
     syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
     syncRexPreproUI()
 }
 // 從localstorage讀project資料
-let PROJECT = "CHI"
+let PROJECT = "REX"
 chrome.storage.local.get("project").then((result) => {
     if(result["project"] != undefined){
         PROJECT = result["project"]
@@ -591,7 +727,8 @@ chrome.storage.local.get("milestone_select").then((result) => {
     syncRexMilestoneUI()
     if(result["milestone_select"] != undefined){
         const saved_ids = result["milestone_select"].toString().split(",")
-        const saved_id = saved_ids.includes("Loc_Ship_Beta") ? "Loc_Ship_Beta" : saved_ids.find(id => id && $("#" + id).length)
+        // Migrate the retired Ship+Beta choice to Beta.
+        const saved_id = saved_ids.includes("Loc_Ship_Beta") ? "Loc_Beta" : saved_ids.find(id => id && $("#" + id).length)
         if(saved_id) $("#" + saved_id).prop('selected', true)
     }
     $("#milestone_select").prop('disabled', milestone_lock)
@@ -606,24 +743,32 @@ function saveSelectedMilestones() {
     chrome.storage.local.set({"milestone_select": getSelectedMilestoneIds().join()})
 }
 function syncRexMilestoneUI() {
-    // REX only: keep Milestone as a normal dropdown like Label, with an extra Ship+Beta option.
+    // Milestone is a normal dropdown. Ship+Beta has been retired for REX.
     $("#milestone_select").removeAttr("multiple").removeAttr("title")
-    if(PROJECT == "REX") {
-        if($("#Loc_Ship_Beta").length == 0) {
-            $("#Loc_Beta").after('<option id="Loc_Ship_Beta" value="Loc_Ship Loc_Beta">Ship+Beta</option>')
-        }
-        $("#Loc_Ship_Beta").show()
-    }else{
-        if($("#Loc_Ship_Beta").is(":selected")) {
-            $("#milestone_select").val("")
-        }
-        $("#Loc_Ship_Beta").hide()
-    }
+    $("#Loc_Ship_Beta").remove()
 }
 function getRexFixVersionQuery() {
-    const ids = getSelectedMilestoneIds()
-    const values = getSelectedMilestoneValues().join(" ")
-    return (PROJECT == "REX" && (ids.includes("Loc_Ship_Beta") || (values.includes("Loc_Ship") && values.includes("Loc_Beta")))) ? "&fixVersions=17162" : ""
+    if(PROJECT != "REX") return ""
+
+    const rexFixVersions = {
+        "Loc_Ship": "17163",
+        "Loc_Beta": "17162",
+        "Loc_1": "27904",
+        "Loc_15": "27906",
+        "Loc_2": "27908",
+        "Loc_25": "27914",
+        "Loc_3": "27916",
+        "Loc_35": "27918",
+        "Loc_4": "27920",
+        "Loc_45": "27922",
+        "Loc_5": "27924",
+        "Loc_55": "27926",
+        "Loc_6": "27928",
+        "Loc_65": "27930"
+    }
+
+    const fixVersion = rexFixVersions[getSelectedMilestoneIds()[0]]
+    return fixVersion ? "&fixVersions=" + fixVersion : ""
 }
 // 當season有修改時 上傳localstorage
 $("#milestone_select").change(() => {
@@ -733,7 +878,6 @@ chrome.storage.local.get("platform").then((result) => {
 })
 // platform是否有被選擇
 $(".add_platform").on("click", function() {
-    let previous_selected = getSelectedPlatformText()
     if(PROJECT == "REX") $("#platform_external_review").removeClass("selected")
     if($(this).hasClass("selected")) {
         if(getSelectedPlatformElements().length > 1) {
@@ -742,16 +886,12 @@ $(".add_platform").on("click", function() {
     }else {
         $(this).addClass("selected")
     }
-    let current_selected = getSelectedPlatformText()
     saveSelectedPlatforms()
-    $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
-    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
 })
 $("#platform_switch").on("click", function() {
     if(PROJECT != "REX") return
-    let previous_selected = getSelectedPlatformText()
     $("#platform_external_review").removeClass("selected")
     if($(this).hasClass("selected")) {
         if(getSelectedPlatformElements().length > 1) {
@@ -760,22 +900,15 @@ $("#platform_switch").on("click", function() {
     }else {
         $(this).addClass("selected")
     }
-    let current_selected = getSelectedPlatformText()
     saveSelectedPlatforms()
-    $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
-    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
 })
 $("#platform_external_review").on("click", function() {
     if(PROJECT != "REX") return
-    let previous_selected = getSelectedPlatformText()
     $(".add_platform, #platform_switch").removeClass("selected")
     $(this).addClass("selected")
-    let current_selected = getSelectedPlatformText()
     saveSelectedPlatforms()
-    $("#repro_step").val($("#repro_step").val().replace(previous_selected, current_selected))
-    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     syncReproStepDefaultByPlatform()
     syncReproStepPlatformOnly()
 })
@@ -866,12 +999,14 @@ $(".add_lng").on("click", function() {
     }).get().join()
     chrome.storage.local.set({"labels": labels})
     // 修改repro step的受影響語言 所以要順便更新repro step到localstorage
-    if($(".add_lng.selected").length > 1 || $(".add_lng.selected").text() == "ML" || $(".add_lng.selected").text() == "All"){
-        $("#repro_step").val($("#repro_step").val().replace(previous_selected, "affected LNG"))
-    }else{
-        $("#repro_step").val($("#repro_step").val().replace(previous_selected, $(".add_lng.selected").text()))
+    if(!reproStepManual) {
+        if($(".add_lng.selected").length > 1 || $(".add_lng.selected").text() == "ML" || $(".add_lng.selected").text() == "All"){
+            $("#repro_step").val($("#repro_step").val().replace(previous_selected, "affected LNG"))
+        }else{
+            $("#repro_step").val($("#repro_step").val().replace(previous_selected, $(".add_lng.selected").text()))
+        }
+        chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     }
-    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
     syncReproStepDefaultByPlatform()
     updateKeywords()
     syncRexPreproUI()
@@ -883,7 +1018,10 @@ chrome.storage.local.get("labels").then((result) => {
             $("#" + id).addClass("selected")
         })
         $(".add_label.advanced_type.selected").each(function() {
-            $("." + $(this).text() + "_specific").show()
+            const specificClass = PROJECT == "REX" && this.id == "Loc_UI"
+                ? ".text_specific"
+                : "." + $(this).text() + "_specific"
+            $(specificClass).show()
         })
         syncRexPreproUI()
     }else{
@@ -937,10 +1075,15 @@ $(".add_label").on("click", function() {
 // 打開衍伸的labels(Text, Audio, Subtitle, Telescope)
 $("button.advanced_type").on("click", function() {
     let button_clicked = $(this)
-    let specific_class = "." + $(this).val().split("_")[1] + "_specific"
+    // REX Menu/UI issues use the Text second-level issue types.
+    let specific_class = PROJECT == "REX" && $(this).attr("id") == "Loc_UI"
+        ? ".text_specific"
+        : "." + $(this).val().split("_")[1] + "_specific"
     $(".specific_label").hide()
     $("button.advanced_type.selected").each(function() {
-        let current_specific_class = "." + $(this).val().split("_")[1] + "_specific"
+        let current_specific_class = PROJECT == "REX" && $(this).attr("id") == "Loc_UI"
+            ? ".text_specific"
+            : "." + $(this).val().split("_")[1] + "_specific"
         $(current_specific_class).show()
         // Text, Subtitle, Audio相關的
         if(button_clicked.is(this) && $(this).hasClass("issue_type_1") && $(this).hasClass("selected") && $(current_specific_class + " .issue_type_2.selected").length == 0) {
@@ -957,7 +1100,7 @@ $("button.advanced_type").on("click", function() {
         }
     }
     // 用於非必填的(telescope)
-    if(!button_clicked.hasClass("selected")) {
+    if(!button_clicked.hasClass("selected") && !(specific_class == ".text_specific" && $("#Loc_Text").hasClass("selected"))) {
         $(specific_class + " .issue_type_2").removeClass("selected")
         $("." + $(this).val() + "_subtype").removeClass("selected")
     }
@@ -987,7 +1130,7 @@ $("#resource_ids").change(() => {
 chrome.storage.local.get("repro_step").then((result) => {
     if(result["repro_step"] != undefined){
         $("#repro_step").val(result["repro_step"])
-        syncReproStepPlatformOnly()
+        reproStepManualReady.then(() => syncReproStepPlatformOnly())
         // 把textarea展開
         $("#repro_step").css("height", "1px") // textarea和input的預設大小是20px 看起來比較一致
         $("#repro_step").css("height", ($("#repro_step").prop('scrollHeight')) == 20 ? "93px" : ($("#repro_step").prop('scrollHeight')) + 2 + "px") // 多+2是因為有padding
@@ -998,12 +1141,17 @@ chrome.storage.local.get("repro_step").then((result) => {
             getSelectedPlatformText() + 
             "\n2)\n3) Observe the issue"
         )
-        syncReproStepPlatformOnly()
+        reproStepManualReady.then(() => syncReproStepPlatformOnly())
     }
 })
-// 當Repro step有修改時 上傳localstorage
+// 當Repro step有修改時 上傳localstorage, 並標記為手動編輯(之後不再被自動覆蓋)
+$("#repro_step").on("input", () => {
+    if(reproStepAutoUpdating) return
+    markReproStepManual()
+})
 $("#repro_step").change(() => {
-    chrome.storage.local.set({"repro_step": $("#repro_step").val()})
+    if(reproStepAutoUpdating) return
+    markReproStepManual()
 })
 // 從localstorage讀Bug observe資料
 chrome.storage.local.get("bug_observed").then((result) => {
@@ -1063,6 +1211,7 @@ function reset_all() {
         getSelectedPlatformText() + 
         "\n2)\n3) Observe the issue"
     })
+    clearReproStepManual()
     chrome.storage.local.set({"bug_observed": ""})
     chrome.storage.local.set({"resource_ids": ""})
     saveSelectedPlatforms()
@@ -1097,10 +1246,13 @@ chrome.storage.local.set({"label_select": ""})
     }).get().join()
     chrome.storage.local.set({"labels": labels})
     // 重新渲染顏色
-    applyTheme($(".theme_btn.selected").data("value"))
+    const selectedTheme = $(".theme_btn.selected").data("value")
+    if(selectedTheme == "custom") applyCustomTheme(getCustomThemeColors())
+    else applyTheme(selectedTheme)
 }
 $("#reset_all").on("click", () => {
     reset_all()
+    showToast("Template reset")
 })
 // 開啟new bug頁
 $("#create_bug").on("click", ()=> {
@@ -1125,7 +1277,7 @@ if(label_select_val) {
  if(PROJECT == "REX" && platform == "PC/PS5/XSX") display_platform = "PC/PS5/XSX"
  if(PROJECT == "REX" && platform == "PC/PS5/PS4/XSX/X1") display_platform = "PC/PS5/XSX"
  // REX summary only: show Switch platform as Switch 2 in the Jira summary
- if(PROJECT == "REX") display_platform = display_platform.replace(/\bSWITCH\b/g, "Switch 2")
+ if(PROJECT == "REX") display_platform = display_platform.replace(/\bSWITCH 2\b/g, "Switch 2").replace(/\bSWITCH\b/g, "Switch 2")
 
     let platform_query = ""
     const platform_type = {
@@ -1327,16 +1479,14 @@ else {
     let summary_detail = $("#summary").val()
     let issue_type_1 = $(".issue_type_1.selected").text().toUpperCase()
     let issue_type_2 = $(".issue_type_2.selected").text().replace("_", "/").toUpperCase()
-    let rex_ui_issue_type_2 = PROJECT == "REX" && $("#Loc_UI").hasClass("selected") ?
-        $(".specific_label:visible .issue_type_2.selected").not(".prepro_specific .issue_type_2").first().text().replace("_", "/").toUpperCase() : ""
-    
     if (issue_type_1 == "PREPRO" || (PROJECT == "REX" && $("#Loc_Audio_PP").hasClass("selected"))) issue_type_1 = "AUDIO" // Prepro的issue_type_1是AUDIO
     if(PROJECT == "REX" && $("#Loc_Art").hasClass("selected")) {
         issue_type_1 = "ART"
         issue_type_2 = ""
     }else if(PROJECT == "REX" && $("#Loc_UI").hasClass("selected")) {
-        issue_type_1 = rex_ui_issue_type_2 != "" ? rex_ui_issue_type_2 : "UI"
-        issue_type_2 = ""
+        // UI is the primary type only when it is the only primary type.
+        // If UI and Text/Audio/etc. are selected together, show the other type.
+        if(issue_type_1 == "") issue_type_1 = "UI"
     }
     let high_priority_type_2 = ["Loc_Arabic_Safe", "Loc_Arabic_Technical", "Loc_German_Safe", "Loc_Japanese_Safe", "Loc_Korean_Safe", "Loc_Chinese_Safe"]
     high_priority_type_2.forEach(type => {
@@ -1384,7 +1534,7 @@ else {
     const resource_id_text = resource_id_list.length > 0 ? resource_id_list.join("\n") : "N/A"
     const is_rex_external_review = PROJECT == "REX" && $("#platform_external_review").hasClass("selected")
     const build_number_section = is_rex_external_review ? "" : ((PROJECT == "REX" && found_cl == "") ? "" : "Build number: *" + found_cl + "*\n\n")
-    if(is_rex_external_review) {
+    if(is_rex_external_review && !reproStepManual) {
         repro_step = getExternalReviewReproStep()
     }
     let description =
@@ -1422,7 +1572,11 @@ const query_string = {
 
     // 非常重要！！！ 現在把resource_ids存進localstorage 並在新分頁開啟Log Bug頁後才從content script填入欄位
     // 因為如果resource_ids太多 導致query string太長會被瀏覽器阻擋
-    chrome.storage.local.set({"resource_ids_template": resource_ids}, () => {
+    const applyRexPublicBeta = PROJECT == "REX" && getSelectedMilestoneIds().includes("Loc_Beta")
+    chrome.storage.local.set({
+        "resource_ids_template": resource_ids,
+        "apply_rex_public_beta": applyRexPublicBeta
+    }, () => {
         // 使用Query String在新分頁開啟Log Bug頁
         chrome.tabs.create({url: query_string[PROJECT]})
     })
@@ -1722,6 +1876,7 @@ $("#release_id").on("input", function () {
 // filename 複製
 $("#file_name_copy").on("click", async () => {
     navigator.clipboard.writeText($("#file_name").val()).then(async () => {
+        showToast("Copied to clipboard")
         $("#file_name_copy").removeClass("fa-copy").addClass("fa-check");
         await new Promise(r => setTimeout(r, 1000));
         $("#file_name_copy").removeClass("fa-check").addClass("fa-copy");
@@ -1787,7 +1942,7 @@ function getBugCategory() {
 }
 
 const comment_platform_CHI = ["PC", "PS5", "XSX", "PS4", "X1", "Xloc"];
-const comment_platform_REX = ["PC", "PS5", "XSX", "Xloc"];
+const comment_platform_REX = ["PC", "PS5", "XSX", "Switch 2", "Xloc"];
 function getCommentPlatformList() {
  // Only affect REX issues
  const bid = ($("#bug_id").val() || "");
@@ -2026,6 +2181,7 @@ function convert_to_audio_dvar() {
 // 按下Audio Dvar複製
 $("#audio_dvar_copy").on("click", async () => {
     navigator.clipboard.writeText($("#colored_string").val()).then(async () => {
+        showToast("Audio Dvar copied")
         $("#audio_dvar_copy").removeClass("fa-copy").addClass("fa-check")
         await new Promise(r => setTimeout(r, 1000))
         $("#audio_dvar_copy").removeClass("fa-check").addClass("fa-copy")
@@ -2560,6 +2716,7 @@ function readWZGameMode() {
 $("#dvar_copy").on("click", async () => {
     navigator.clipboard.writeText($("#result_dvar").val()).then(async () => {
         console.log('Async: Copying to clipboard was successful!')
+        showToast("Dvar copied")
         $("#dvar_copy").removeClass("fa-copy").addClass("fa-check")
         await new Promise(r => setTimeout(r, 1000))
         $("#dvar_copy").removeClass("fa-check").addClass("fa-copy")
@@ -2567,4 +2724,3 @@ $("#dvar_copy").on("click", async () => {
         alert('Async: Could not copy text: ', err);
     });
 })
-

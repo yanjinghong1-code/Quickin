@@ -5,8 +5,11 @@ chrome.runtime.onMessage.addListener(
         console.log(message)
         switch(message.type) {
             case "read_bug_data":
-                asyncExecuteScript(['./scripts/read_bug_data.js']).then((result) => {
+                asyncReadBugData().then((result) => {
                     sendResponse(result)
+                }).catch((error) => {
+                    console.error("Cannot read bug data:", error)
+                    sendResponse(null)
                 })
                 return true // 告知非同步回應
             case "read_color_code":
@@ -63,4 +66,22 @@ async function getCurrentTabId() {
     }catch(err) {
         console.log(err)
     }
+}
+
+// `executeScript({files})` cannot return the value of an async function called
+// by the injected file. Load the parser first, then invoke its exported
+// function with `func`, whose resolved value Chrome returns to this worker.
+async function asyncReadBugData() {
+    const tabId = await getCurrentTabId()
+    if (!tabId) return null
+
+    await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['./scripts/read_bug_data.js']
+    })
+    const result = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: async () => await globalThis.kakinRetrieveBugData()
+    })
+    return result[0]?.result ?? null
 }

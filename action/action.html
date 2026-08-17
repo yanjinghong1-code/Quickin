@@ -10,6 +10,20 @@
         <script src="xlsx.full.min.js"></script>
     </head>
     <body>
+        <header class="app-header">
+            <div class="app-brand">
+                <img src="../images/icon-32.png" alt="" class="app-brand-icon">
+                <div>
+                    <strong>Kakin</strong>
+                    <span id="workspace_title">Bug template</span>
+                </div>
+            </div>
+            <div class="app-meta">
+                <span class="app-status"><i class="fa-solid fa-circle"></i> Ready</span>
+                <span id="version" class="app-version" title="Checking for updates"></span>
+            </div>
+        </header>
+        <div id="toast" role="status" aria-live="polite"></div>
         <!-- FTUE page -->
         <div id="ftue" style="display: none;">
             <button id="close_ftue">
@@ -50,13 +64,23 @@
   <button class="theme_btn" id="theme_strawberry" data-value="strawberry">Strawberry</button>
   <button class="theme_btn" id="theme_chimera" data-value="chimera">Chimera</button>
   <button class="theme_btn" id="theme_rex" data-value="rex">REX</button>
+  <button class="theme_btn" id="theme_custom" data-value="custom"><i class="fa-solid fa-palette"></i> Custom</button>
 </div>
+            <div id="custom_theme_controls" class="custom-theme-controls" hidden>
+                <p>Custom palette</p>
+                <div class="color-grid">
+                    <label>Background<input type="color" data-custom-color="background" value="#F7F8FC"></label>
+                    <label>Text<input type="color" data-custom-color="text" value="#1F2937"></label>
+                    <label>Accent<input type="color" data-custom-color="accent" value="#5B5CE2"></label>
+                    <label>Button<input type="color" data-custom-color="button" value="#FFFFFF"></label>
+                    <label>Border<input type="color" data-custom-color="border" value="#D9DDEA"></label>
+                </div>
+            </div>
             <div class="divider-container" style="margin-top: 20px;"><div class="divider"></div>&emsp;<b>Help</b>&emsp;<div class="divider"></div></div>
             <div class="button-container" style="margin-top: 10px;">
                 <button class="help_btn" id="report_issue_btn">Report an issue</button>
                 <button class="help_btn" id="manual_guide_btn">Manual guide</button>
             </div>
-            <p id="version" style="text-align: center;"></p>
         </div>
 
         <!-- Tabs -->
@@ -117,15 +141,15 @@
     </div>
 </div>
                 <div class="divider-container"><div class="divider"></div>&emsp;<b>Platform</b>&emsp;<div class="divider"></div></div>
-                <div class="button-container">
-                    <button class="add_platform" id="platform_PC" value="">PC</button> 
-                    <button class="add_platform" id="platform_PS5" value="">PS5</button> 
-                    <button class="add_platform" id="platform_PS4" value="">PS4</button> 
-                    <button class="add_platform" id="platform_XSX" value="">XSX</button> 
-                    <button class="add_platform" id="platform_X1" value="">X1</button>
+                <div class="button-container platform-options">
+                    <button class="add_platform" id="platform_PC" value=""><i class="fa-solid fa-desktop"></i><span>PC</span></button> 
+                    <button class="add_platform" id="platform_PS5" value=""><i class="fa-solid fa-gamepad"></i><span>PS5</span></button> 
+                    <button class="add_platform" id="platform_PS4" value=""><i class="fa-solid fa-gamepad"></i><span>PS4</span></button> 
+                    <button class="add_platform" id="platform_XSX" value=""><i class="fa-brands fa-xbox"></i><span>XSX</span></button> 
+                    <button class="add_platform" id="platform_X1" value=""><i class="fa-brands fa-xbox"></i><span>X1</span></button>
                 
- <button class="platform_switch" id="platform_switch" type="button" title="Reserved">SWITCH</button>
-                    <button class="platform_external_review" id="platform_external_review" type="button" title="REX only: Jira Platform = All">EXTERNAL REVIEW</button>
+ <button class="platform_switch" id="platform_switch" type="button" title="REX only"><i class="fa-solid fa-gamepad"></i><span>Switch</span></button>
+                    <button class="platform_external_review" id="platform_external_review" type="button" title="REX only: Jira Platform = All"><i class="fa-solid fa-globe"></i><span>External review</span></button>
 </div>
                 <div class="divider-container"><div class="divider"></div>&emsp;<b>Languages</b>&emsp;<div class="divider"></div></div>
                 <div class="button-container">
@@ -335,9 +359,11 @@
         </div>
 
         <div id="xloc" class="tabcontent">
-            <button id="compare_source" title="Compare current and previous source">&nbsp;&nbsp;&nbsp;Compare source&nbsp;&nbsp;&nbsp;</button>
-            <button id="compare_translation" title="Compare current and previous translation">Compare translation</button>
-            <button id="highlight_color_code" title="Highlilght the corresponding color on color code">Highlight color code</button><br>
+            <div class="xloc-actions">
+                <button id="compare_source" title="Compare current and previous source"><i class="fa-solid fa-code-compare"></i> Source</button>
+                <button id="compare_translation" title="Compare current and previous translation"><i class="fa-solid fa-language"></i> Translation</button>
+                <button id="highlight_color_code" title="Highlight the corresponding color on color code"><i class="fa-solid fa-highlighter"></i> Colors</button>
+            </div>
             <p style="text-align: center; margin-bottom: 6px;">Audio Dvar Create</p>
             <textarea id="color_code_string" placeholder="Paste Audio ID here!" rows="3" title="Convert Audio ID into Dvar"></textarea>
             <!-- Shadow Clone -->

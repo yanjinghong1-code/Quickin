@@ -31,6 +31,15 @@ if (window.location.host === "xloc.activision.com") {
         return alias ? "snd_start_alias " + alias : "";
     }
 
+    function getLocCommentFromRow(row) {
+        const noteDiv = row.querySelector("div.xloc_FormatForHTML");
+        if (!noteDiv) return "";
+        const lines = (noteDiv.innerText || noteDiv.textContent || "").split(/\r?\n/);
+        const locLine = lines.find(line => /^\s*Loc Comment\b/i.test(line));
+        if (!locLine) return "";
+        return locLine.replace(/^\s*Loc Comment\s*(?:-|:)?\s*/i, "").trim();
+    }
+
     function ensureBatchButtonsExist() {
         if (document.getElementById("batch-btn-container")) return;
         const table = document.querySelector("table.rgMasterTable");
@@ -52,14 +61,21 @@ if (window.location.host === "xloc.activision.com") {
         const btnRid = createBtn("batch-copy-all-rids", "Copy All Resource IDs");
         const btnFn = createBtn("batch-copy-all-filenames", "Copy All Filenames");
         const btnDvar = createBtn("batch-copy-all-dvars", "Copy All Dvars");
+        const btnLocComment = createBtn("batch-copy-all-loc-comments", "Copy All Loc Comments");
         const btnCallDvar = createBtn("batch-call-all-dvars", "Copy All Dvars");
 
-        container.append(btnRid, btnFn, btnDvar, btnCallDvar);
+        container.append(btnRid, btnFn, btnDvar, btnLocComment, btnCallDvar);
         table.parentNode.insertBefore(container, table);
 
         btnRid.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.rid).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
         btnFn.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.filename).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
         btnDvar.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.dvar).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
+        btnLocComment.onclick = () => {
+            const data = Array.from(table.querySelectorAll("tbody tr"))
+                .map(row => row.querySelector(".xloc-batch-data")?.dataset.locComment || getLocCommentFromRow(row))
+                .filter(Boolean);
+            if(data.length) navigator.clipboard.writeText(data.join("\n"));
+        };
         btnCallDvar.onclick = () => { const data = Array.from(document.querySelectorAll(".xloc-batch-data")).map(el => el.dataset.callDvar).filter(Boolean); if(data.length) navigator.clipboard.writeText(data.join("\n")); };
     }
 
@@ -73,6 +89,7 @@ if (window.location.host === "xloc.activision.com") {
 
         let hasAnyFilename = false;
         let hasAnyCallDvar = false;
+        let hasAnyLocComment = false;
 
         table.querySelectorAll("tbody tr").forEach(tr => {
             let cells = tr.querySelectorAll("td");
@@ -91,13 +108,18 @@ if (window.location.host === "xloc.activision.com") {
 
             if (notes_idx !== -1 && cells[notes_idx]) {
                 let noteDiv = cells[notes_idx].querySelector("div.xloc_FormatForHTML");
+                const rowLocComment = getLocCommentFromRow(tr);
+                if (rowLocComment) {
+                    dataSpan.dataset.locComment = rowLocComment;
+                    hasAnyLocComment = true;
+                }
                 if (noteDiv && !noteDiv.querySelector(".xloc-copy-btn")) {
                     
                     // --- 移植 content1.js 的字典化解析逻辑 ---
                     let content = noteDiv.innerHTML;
                     content = content.replaceAll("<span class=\"table-highlight-string\">", "").replaceAll("</span>", "");
                     
-                    if(content.includes("Filename")) {
+                    if(content.includes("Filename") || content.includes("Loc Comment")) {
                         const postfix_regex = /_[0-9]{2}/g;
                         let content_dict = content.split("<br>")
                             .filter(line => line.trim() !== "")
@@ -108,6 +130,11 @@ if (window.location.host === "xloc.activision.com") {
                             }, {});
 
                         let filename_full = content_dict["Filename"];
+                        let locComment = content_dict["Loc Comment"] || "";
+                        if (locComment) {
+                            dataSpan.dataset.locComment = locComment;
+                            hasAnyLocComment = true;
+                        }
                         if (filename_full) {
                             hasAnyFilename = true;
                             let filename = filename_full.replace(".wav", "");
@@ -129,7 +156,6 @@ if (window.location.host === "xloc.activision.com") {
                             
                             dataSpan.dataset.filename = filename_full;
                             dataSpan.dataset.dvar = dvar;
-
                             const createSingleBtn = (label, content) => {
                                 let btn = document.createElement("button");
                                 btn.innerHTML = "<span class=\"xloc-copy-icon\">📄</span> " + label;
@@ -142,17 +168,30 @@ if (window.location.host === "xloc.activision.com") {
                             noteDiv.appendChild(document.createElement("br"));
                             noteDiv.appendChild(createSingleBtn("Filename", filename_full));
                             noteDiv.appendChild(createSingleBtn("Dvar", dvar));
+                            if (locComment) noteDiv.appendChild(createSingleBtn("Loc Comment", locComment));
+                        } else if (locComment) {
+                            const btn = document.createElement("button");
+                            btn.innerHTML = "<span class=\"xloc-copy-icon\">📄</span> Loc Comment";
+                            btn.className = "xloc-copy-btn";
+                            btn.style.marginLeft = "5px";
+                            btn.onclick = (e) => { e.preventDefault(); navigator.clipboard.writeText(locComment); };
+                            noteDiv.appendChild(document.createElement("br"));
+                            noteDiv.appendChild(btn);
                         }
                     }
 
                 } else if (noteDiv && noteDiv.querySelector(".xloc-copy-btn")) {
-                    hasAnyFilename = true; 
+                    hasAnyFilename = true;
+                    if (dataSpan.dataset.locComment || getLocCommentFromRow(tr) || noteDiv.innerText.includes("Loc Comment")) {
+                        hasAnyLocComment = true;
+                    }
                 }
             }
         });
 
         const btnFn = document.getElementById("batch-copy-all-filenames");
         const btnDvar = document.getElementById("batch-copy-all-dvars");
+        const btnLocComment = document.getElementById("batch-copy-all-loc-comments");
         const btnCallDvar = document.getElementById("batch-call-all-dvars");
         if (btnFn && btnDvar) {
             btnFn.style.display = hasAnyFilename ? "block" : "none";
@@ -161,6 +200,7 @@ if (window.location.host === "xloc.activision.com") {
         if (btnCallDvar) {
             btnCallDvar.style.display = (isCallOfDutyTrunkPage() && hasAnyCallDvar) ? "block" : "none";
         }
+        if (btnLocComment) btnLocComment.style.display = hasAnyLocComment ? "block" : "none";
     }
 
     const observer = new MutationObserver(() => {
@@ -188,6 +228,43 @@ if(window.location.pathname == "/jira/secure/CreateIssueDetails!init.jspa") {
             if (ridInput) ridInput.value = result.resource_ids_template;
             chrome.storage.local.set({"resource_ids_template": ""});
         }
+    });
+
+    // REX Beta bugs must use the REX_PublicBeta Fix Version. The Jira
+    // autocomplete is rendered asynchronously, so wait for its option before
+    // selecting it.
+    chrome.storage.local.get("apply_rex_public_beta").then((result) => {
+        if (!result.apply_rex_public_beta) return;
+
+        let attempts = 0;
+        let searchStarted = false;
+        const selectPublicBeta = setInterval(() => {
+            const input = document.getElementById("fixVersions-textarea");
+            if (!input || attempts++ > 40) {
+                chrome.storage.local.set({ "apply_rex_public_beta": false });
+                clearInterval(selectPublicBeta);
+                return;
+            }
+            if (input.dataset.kakinPublicBetaSelected === "true") {
+                clearInterval(selectPublicBeta);
+                return;
+            }
+            if (!searchStarted) {
+                input.focus();
+                input.value = "REX_PublicBeta";
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new KeyboardEvent("keyup", { key: "a", bubbles: true }));
+                searchStarted = true;
+            }
+
+            const option = document.querySelector('#rex_publicbeta-2-link, [id^="rex_publicbeta-"][id$="-link"]');
+            if (option) {
+                option.click();
+                input.dataset.kakinPublicBetaSelected = "true";
+                chrome.storage.local.set({ "apply_rex_public_beta": false });
+                clearInterval(selectPublicBeta);
+            }
+        }, 250);
     });
 
     (function autoFillAutomationUtilized() {
